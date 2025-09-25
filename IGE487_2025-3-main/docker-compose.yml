@@ -1,0 +1,16 @@
+services:
+  herbivorie-db:
+    image: postgres:15
+    container_name: pg-herbivorie
+    environment:
+      POSTGRES_USER: herbivorie
+      POSTGRES_PASSWORD: herbivorie
+      POSTGRES_DB: herbivorie_dev
+    ports:
+      - "5433:5432"   # évite tout conflit (5432 souvent déjà pris)
+    volumes:
+      - herbivorie_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  herbivorie_pgdata:
