@@ -1,0 +1,28 @@
+= Documentation des corrections apportées (Jalon 1)
+
+== Inadéquations corrigées
+
+1. **Y1** : Ajout des types et tables météo pour gérer les températures, humidité, précipitations avec unités et valeurs manquantes.
+2. **Y2** : Création de la table `CarnetMeteo` pour les relevés bruts et d'une procédure `transferer_donnees_meteo` pour valider et transférer les données.
+3. **Y3** : Création de la vue `ConditionsMeteo` pour exposer les données météo hors précipitations.
+4. **Y4** : Ajout de la procédure `supprimer_donnees_meteo` pour supprimer les données météo d'une période si Tmin < seuil.
+5. **Y5** : Ajout de la procédure `augmenter_temperatures` pour augmenter les températures d'un pourcentage pour une période donnée.
+6. **Y6** : Ajout d'une contrainte sur la table `Taux` pour garantir compacité, non-chevauchement et couverture complète de 0 à 100.
+7. **Y7** : Révision de la table `ObsFloraison` (suppression de la colonne `fleur`, ajustement de la clé primaire stricte).
+8. **Y8** : Renommage de la table `peup` en `peuplement` et adaptation des références.
+
+== Améliorations de la normalisation
+
+- Les corrections apportées améliorent la cohérence des données et respectent les principes de la 3NF (normalisation).
+- Les dépendances fonctionnelles sont clarifiées, et les clés primaires/étrangères sont ajustées pour éviter les anomalies de mise à jour.
+
+== Points clés pour la réunion
+
+- Les nouvelles tables et procédures permettent une gestion plus robuste des données météo.
+- Les contraintes ajoutées garantissent l'intégrité des données (ex. `Taux`).
+- Les modifications facilitent l'analyse des données et réduisent les risques d'erreurs.
+
+== Tests
+
+- Les scripts de test dans `07_tests_verif.sql` valident les corrections apportées.
+- Les données de test dans `04_seed.sql` couvrent les cas principaux.
