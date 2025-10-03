@@ -92,20 +92,20 @@ SET SCHEMA 'Herbivorie' ;
 --
 CREATE DOMAIN Arbre_id
  -- Code identifiant uniquement une variété d’arbres.
-  TEXT
-  CHECK (CHAR_LENGTH (VALUE) BETWEEN 1 AND 20);
+  integer
+  CHECK (VALUE >= 1);
 
 CREATE DOMAIN Description
  -- Description textuelle consignée par l’observateur.
  -- Typiquement, une définition, une annotation ou un commentaire associé à une observation.
   TEXT
-  CHECK (CHAR_LENGTH (VALUE) BETWEEN 1 AND 60);
+  CHECK (CHAR_LENGTH (VALUE) BETWEEN 1 AND 400);
 
 CREATE TABLE Arbre
  -- Répertoire des variétés d’arbres.
  -- PRÉDICAT : La variété d’arbres identifiée par "arbre" correspond à la description "description".
 (
-  arbre       Arbre_id    NOT NULL,
+  arbre       Arbre_id    not null ,
   description Description NOT NULL,
   CONSTRAINT Arbre_cc0 PRIMARY KEY (arbre)
 );
@@ -184,7 +184,7 @@ CREATE TABLE Placette
   arb_P1    Arbre_id      NOT NULL, -- arbre dominant de la placette (1er rang)
   arb_P2    Arbre_id      NOT NULL, -- arbre dominant de la placette (2e rang)
   arb_P3    Arbre_id      NOT NULL, -- arbre dominant de la placette (3e rang)
-  date      Date_eco      NOT NULL, -- date à laquelle la description a été établie
+  date      Date_eco     default current_date, -- date à laquelle la description a été établie
   CONSTRAINT Placette_cc0 PRIMARY KEY (plac),
   CONSTRAINT Placette_cr_pe FOREIGN KEY (peup) REFERENCES Peuplement (peup),
   CONSTRAINT Placette_cr_f1 FOREIGN KEY (obs_F1) REFERENCES Taux (tCat),
@@ -228,8 +228,8 @@ CREATE TABLE Plant
   id       Plant_id    NOT NULL, -- identifiant unique de chaque trille
   placette Placette_id NOT NULL, -- placette dans laquelle est le trille
   parcelle Parcelle    NOT NULL, -- parcelle dans laquelle se trouve le trille
-  date     Date_eco    NOT NULL, -- date de la prise de données
-  note     TEXT        NOT NULL, -- note supplémentaire à propos du trille
+  date     Date_eco    default current_date, -- date de la prise de données
+  note     Description        NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT Plant_cc0 PRIMARY KEY (id),
   CONSTRAINT Plant_cr0 FOREIGN KEY (placette) REFERENCES Placette (plac)
 );
@@ -248,8 +248,8 @@ CREATE TABLE ObsDimension
   id       Plant_id NOT NULL, -- identifiant unique de chaque trille
   longueur Dim_mm   NOT NULL, -- longueur d’une des feuilles d’un trille, en mm
   largeur  Dim_mm   NOT NULL, -- largeur d’une des feuilles d’un trille, en mm
-  date     Date_eco NOT NULL, -- date de l’observation
-  note     TEXT     NOT NULL, -- note supplémentaire à propos du trille
+  date     Date_eco default current_date, -- date de l’observation
+  note     Description     NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT ObsDimension_cc0 PRIMARY KEY (id, date),
   CONSTRAINT ObsDimension_cr0 FOREIGN KEY (id) REFERENCES Plant (id)
 );
@@ -262,7 +262,7 @@ CREATE TABLE ObsFloraison
   id       Plant_id NOT NULL, -- identifiant unique de chaque trille
   fleur    BOOLEAN  NOT NULL, -- présence de fleur
   date     Date_eco NOT NULL, -- date de l’observation
-  note     TEXT     NOT NULL, -- note supplémentaire à propos du trille
+  note     Description     NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT ObsFloraison_cc0 PRIMARY KEY (id, date),
   CONSTRAINT ObsFloraison_cr0 FOREIGN KEY (id) REFERENCES Plant (id)
 );
@@ -291,8 +291,8 @@ CREATE TABLE ObsEtat
 (
   id       Plant_id NOT NULL, -- identifiant unique de chaque trille
   etat     Etat_id  NOT NULL, -- état du plant
-  date     Date_eco NOT NULL, -- date de l’observation
-  note     TEXT     NOT NULL, -- note supplémentaire à propos du trille
+  date     Date_eco default current_date, -- date de l’observation
+  note     Description     NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT ObsEtat_cc0 PRIMARY KEY (id, date),
   CONSTRAINT ObsEtat_cr0 FOREIGN KEY (id) REFERENCES Plant (id),
   CONSTRAINT ObsEtat_cr1 FOREIGN KEY (etat) REFERENCES Etat (etat)
