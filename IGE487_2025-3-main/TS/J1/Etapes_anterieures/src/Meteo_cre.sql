@@ -40,11 +40,12 @@ CREATE TABLE ObsTemperature
   --            était comprise entre "temp_min" et "temp_max".
   --            À cette occasion, l’observateur a consigné le commentaire "note".
 (
-  date      Date_eco NOT NULL,
+  date      Date_eco default current_date,
   temp_min  Temperature NOT NULL,
   temp_max  Temperature NOT NULL,
   note      TEXT NOT NULL,
-  CONSTRAINT ObsTemperature_cc0 PRIMARY KEY (date)
+  CONSTRAINT ObsTemperature_cc0 PRIMARY KEY (date),
+  CONSTRAINT ObsTemperature_inter CHECK (temp_min <= temp_max)
 );
 
 CREATE DOMAIN Humidite
@@ -57,10 +58,11 @@ CREATE TABLE ObsHumidite
   -- PRÉDICAT : Il a été observé en date du "date" que la variation de l'humidité absolue
   --            était comprise entre "hum_min" et "hum_max".
 (
-  date      Date_eco NOT NULL,
+  date      Date_eco default current_date,
   hum_min   Humidite NOT NULL,
   hum_max   Humidite NOT NULL,
-  CONSTRAINT ObsHumidite_cc0 PRIMARY KEY (date)
+  CONSTRAINT ObsHumidite_cc0 PRIMARY KEY (date),
+  CONSTRAINT ObsHumidite_inter CHECK (hum_min <= hum_max)
 );
 
 CREATE DOMAIN Vitesse
@@ -73,10 +75,11 @@ CREATE TABLE ObsVents
   -- PRÉDICAT : Il a été observé en date du "date" que la variation de la vitesse des vents
   --            était comprise entre "vent_min" et "vent_max".
 (
-  date      Date_eco NOT NULL,
+  date      Date_eco default current_date,
   vent_min  Vitesse NOT NULL,
   vent_max  Vitesse NOT NULL,
-  CONSTRAINT ObsVents_cc0 PRIMARY KEY (date)
+  CONSTRAINT ObsVents_cc0 PRIMARY KEY (date),
+  CONSTRAINT ObsVents_inter CHECK (vent_min <= vent_max)
 );
 
 CREATE DOMAIN Pression
@@ -89,10 +92,11 @@ CREATE TABLE ObsPression
   -- PRÉDICAT : Il a été observé en date du "date" que la variation de la pression atmosphérique
   --            était comprise entre "vent_min" et "vent_max".
 (
-  date      Date_eco NOT NULL,
+  date      Date_eco default current_date,
   pres_min  Pression NOT NULL,
   pres_max  Pression NOT NULL,
-  CONSTRAINT ObsPression_cc0 PRIMARY KEY (date)
+  CONSTRAINT ObsPression_cc0 PRIMARY KEY (date),
+  CONSTRAINT ObsPression_inter CHECK (pres_min <= pres_max)
 );
 
 CREATE DOMAIN HNP
@@ -122,10 +126,11 @@ CREATE TABLE ObsPrecipitations
   -- PRÉDICAT : Il a été observé en date du "date" que la hauteur normée totale des précipitations
   --            de type "prec_nat" était de "prec_tot".
 (
-  date      Date_eco NOT NULL,
+  date      Date_eco default current_date,
   prec_tot  HNP NOT NULL,
   prec_nat  Code_P NOT NULL,
-  CONSTRAINT ObsPrecipitations_cc0 PRIMARY KEY (date, prec_nat)
+  CONSTRAINT ObsPrecipitations_cc0 PRIMARY KEY (date, prec_nat),
+  CONSTRAINT ObsPrecipitations_cr FOREIGN KEY (prec_nat) REFERENCES TypePrecipitations (code)
 );
 
 CREATE TABLE CarnetMeteo
@@ -133,19 +138,25 @@ CREATE TABLE CarnetMeteo
   -- La table est utilisée afin de vérifier les données en vue de leur insertion
   -- dans le modèle de données.
 (
-  temp_min  text,   -- la température minimale,
-  temp_max  text,   -- la température maximale,
-  hum_min   text,   -- le taux d’humidité absolue minimal (en pourcentage),
-  hum_max   text,   -- le taux d’humidité absolue maximal (en pourcentage),
-  prec_tot  text,   -- les précipitations totales (en mm),
-  prec_nat  text,   -- la nature des précipitations (un texte codifié, voir Code_P et TypePrecipitations),
-  vent_min  text,   -- la vitesse minimale des vents (en km/h),
-  vent_max  text,   -- la vitesse maximale des vents (en km/h),
-  pres_min  text,   -- la pression atmosphérique minimale (en hPa),
-  pres_max  text,   -- la pression atmosphérique maximale (en hPa),
-  date      text,   -- date de la prise de données
+  temp_min  Temperature not null ,   -- la température minimale,
+  temp_max  Temperature not null ,   -- la température maximale,
+  hum_min   Humidite not null ,   -- le taux d’humidité absolue minimal (en pourcentage),
+  hum_max   Humidite not null ,   -- le taux d’humidité absolue maximal (en pourcentage),
+  prec_tot  HNP not null ,   -- les précipitations totales (en mm),
+  prec_nat  Code_P not null ,   -- la nature des précipitations (un texte codifié, voir Code_P et TypePrecipitations),
+  vent_min  Vitesse not null ,   -- la vitesse minimale des vents (en km/h),
+  vent_max  Vitesse not null ,   -- la vitesse maximale des vents (en km/h),
+  pres_min  Pression not null ,   -- la pression atmosphérique minimale (en hPa),
+  pres_max  Pression not null ,   -- la pression atmosphérique maximale (en hPa),
+  date      date_eco default current_date,   -- date de la prise de données
   -- JJ     text,   -- jour julien de la prise de données ; inutilisé dans le présent contexte
-  note      text    -- note supplémentaire à propos des conditions du jour
+  note      text not null,   -- note supplémentaire à propos des conditions du jour
+  CONSTRAINT CarnetMeteo_cr1 FOREIGN KEY (date) REFERENCES ObsTemperature (date),
+  CONSTRAINT CarnetMeteo_cr2 FOREIGN KEY (date) REFERENCES ObsHumidite (date),
+  CONSTRAINT CarnetMeteo_cr3 FOREIGN KEY (date, prec_nat) REFERENCES ObsPrecipitations (date, prec_nat),
+  CONSTRAINT CarnetMeteo_cr4 FOREIGN KEY (date) REFERENCES ObsVents (date),
+  CONSTRAINT CarnetMeteo_cr5 FOREIGN KEY (date) REFERENCES ObsPression (date)
+
 );
 
 
