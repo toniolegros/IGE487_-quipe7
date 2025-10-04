@@ -69,6 +69,10 @@ INSERT INTO Plant (id, placette, parcelle, date, note) VALUES
 -- Placette ajouter pour qu'il y ait un cas au no 7
 INSERT INTO Placette VALUES
   ('A3', 'ERHE', 'E', 'E', 'F', 'F', 'D', 'A', 'D', 'F', 'C', 'ACESAC', 'FAGGRA', 'BETALL', '2017-07-25');
+-- Ajout de jeux de données complémentaires
+INSERT INTO Taux (tCat, tMin, tMax) VALUES ('F', 101, 120);
+INSERT INTO Placette (placette_id, peuplement, obs_F1, obs_F2, obs_C1, obs_C2, obs_T1, obs_T2, graminees, mousses, fougeres, arb_P1, arb_P2, arb_P3, date) VALUES
+  ('P8', 'PEUP8', 'A', 'B', 'C', 'D', 'E', 'F', 'A', 'B', 'C', 8, 9, 10, '2025-10-08');
 
 /*
 -- =========================================================================== Z
