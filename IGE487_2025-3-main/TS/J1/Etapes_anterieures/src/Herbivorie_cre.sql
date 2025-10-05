@@ -298,6 +298,27 @@ CREATE TABLE ObsEtat
   CONSTRAINT ObsEtat_cr1 FOREIGN KEY (etat) REFERENCES Etat (etat)
 );
 
+-- Ajout de contraintes pour valider les références dans Placette
+ALTER TABLE Placette
+ADD CONSTRAINT fk_obs_F1 FOREIGN KEY (obs_F1) REFERENCES Taux (tCat),
+ADD CONSTRAINT fk_obs_F2 FOREIGN KEY (obs_F2) REFERENCES Taux (tCat),
+ADD CONSTRAINT fk_obs_C1 FOREIGN KEY (obs_C1) REFERENCES Taux (tCat),
+ADD CONSTRAINT fk_obs_C2 FOREIGN KEY (obs_C2) REFERENCES Taux (tCat),
+ADD CONSTRAINT fk_obs_T1 FOREIGN KEY (obs_T1) REFERENCES Taux (tCat),
+ADD CONSTRAINT fk_obs_T2 FOREIGN KEY (obs_T2) REFERENCES Taux (tCat);
+
+-- Ajout de contraintes pour garantir une partition stricte dans Taux
+ALTER TABLE Taux
+ADD CONSTRAINT check_taux_partition CHECK (
+  NOT EXISTS (
+    SELECT 1
+    FROM Taux t1, Taux t2
+    WHERE t1.tCat <> t2.tCat AND (
+      t1.tMin <= t2.tMax AND t1.tMax >= t2.tMin
+    )
+  )
+);
+
 /*
 -- =========================================================================== Z
 ////

@@ -70,6 +70,16 @@ INSERT INTO Taux VALUES
   ('E', 1, 5),
   ('F', 0, 0);
 
+-- Nettoyage des données dans Taux
+DELETE FROM Taux WHERE tMin < 0 OR tMax > 100;
+
+-- Réorganisation des catégories pour éviter les chevauchements
+UPDATE Taux SET tMin = 0, tMax = 20 WHERE tCat = 'A';
+UPDATE Taux SET tMin = 21, tMax = 40 WHERE tCat = 'B';
+UPDATE Taux SET tMin = 41, tMax = 60 WHERE tCat = 'C';
+UPDATE Taux SET tMin = 61, tMax = 80 WHERE tCat = 'D';
+UPDATE Taux SET tMin = 81, tMax = 100 WHERE tCat = 'E';
+
 INSERT INTO Arbre VALUES
   ('ABIBAL', 'Abies balsamea'),
   ('ACESAC', 'Acer saccharum'),

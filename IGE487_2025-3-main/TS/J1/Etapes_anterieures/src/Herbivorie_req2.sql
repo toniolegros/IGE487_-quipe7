@@ -65,9 +65,8 @@ WHERE (longueur > 150) AND (largeur > 150)
 -- Même requête qu’en R01.
 -- Donner l’étiquette, la placette et la parcelle de chaque plant.
 SELECT DISTINCT
-  id, placette, parcelle
-FROM ObsDimension
-  JOIN Plant USING (id)
+  id, plant_placette_id, parcelle
+FROM Plant
 WHERE (longueur > 150) AND (largeur > 150)
 ;
 
@@ -137,7 +136,7 @@ WITH
   CatCibles AS (select tCat from Taux where tMin >= 51)
 SELECT count (distinct id)
 FROM Plant
-  JOIN Placette ON (plac=Placette)
+  JOIN Placette ON (placette_id=Placette)
   JOIN Taux ON (obs_T2 = tCat)
 WHERE tCat in (select * from CatCibles)
 ;
@@ -147,7 +146,7 @@ WITH
   CatCibles AS (select tCat from Taux where (tMin < 51) and (51 <= tMax))
 SELECT count (distinct id)
 FROM Plant
-  JOIN Placette ON (plac=Placette)
+  JOIN Placette ON (placette_id=Placette)
   JOIN Taux ON (obs_T2 = tCat)
 WHERE tCat in (select * from CatCibles)
 ;
@@ -174,7 +173,7 @@ WITH
   ),
   PlacCibles AS
   (
-    SELECT DISTINCT plac
+    SELECT DISTINCT placette_id
     FROM Placette JOIN CatCibles ON (mousses=CatCibles.tCat)
   ),
   PlantDates AS
@@ -188,7 +187,7 @@ WITH
 SELECT id, placette, parcelle
 FROM PlantDates
   JOIN Plant USING (id)
-  JOIN PlacCibles ON (placette=plac)
+  JOIN PlacCibles ON (placette=placette_id)
 ;
 
 -- R07.
@@ -230,72 +229,6 @@ WHERE obs_T2 < (SELECT seuil FROM B)
 -- Quels sont les plants qui ne sont pas en floraison au 30 juin et dont la largeur
 -- de feuilles est plus grande que k ?
 -- Donner l’étiquette, la placette et la parcelle de chaque plant.
--- CLARIFICATION
---   Soit k, la largeur moyenne des feuilles des plants dont la floraison
---   est antérieure au 18 mai 2017.
---   Au 30 juin, quels sont les plants qui ne sont pas en floraison et dont la largeur
---   de feuille est plus grande que k ?
-WITH
-  Fk AS -- les plants dont la floraison est antérieure au 18 mai 2017
-    (SELECT DISTINCT id FROM ObsFloraison WHERE fleur AND date < '2017-05-18'),
-  k AS -- la plus  largeur moyenne de feuille parmi Fk
-    (SELECT AVG(largeur) AS largeur FROM ObsDimension NATURAL JOIN FK),
-  Fg AS -- les plants dont la floraison est antérieure au 30 juin 2017
-    (SELECT DISTINCT id FROM ObsFloraison WHERE fleur AND date < '2017-06-30'),
-  non_Fg AS -- les plants qui ne sont pas en floraison au 30 juin
-    (SELECT id FROM Plant EXCEPT SELECT * FROM Fg)
-SELECT DISTINCT id, placette, parcelle
-FROM non_Fg NATURAL JOIN Plant NATURAL JOIN ObsDimension
-WHERE largeur > (SELECT largeur FROM k)
-;
-
--- R09.
--- Quels sont les plants dont la largeur de la feuille a dépassé 100 mm avant
--- le 15 juin 2017, mais dont la floraison (initiale) est postérieure au 2 juillet 2017 (la cible) ?
--- Donner l’étiquette, la placette et la parcelle de chaque plant.
--- NOTE 1
---  Encore une fois, les données de terrain ne permettent pas d'illustrer de tels cas
---  pour la cible du 2 juillet, par contre il en existe pour la cible du 12 mai,
---  d'où le changement de cible ci-après.
-
-WITH
-  D AS (
-    SELECT DISTINCT id FROM ObsDimension WHERE largeur > 100 AND date < '2017-06-15'
-    ),
-  F AS (
-      SELECT DISTINCT id
-      FROM ObsFloraison
-      WHERE fleur AND date > '2017-05-12'
-    EXCEPT
-      SELECT DISTINCT id
-      FROM ObsFloraison
-      WHERE fleur AND date <= '2017-05-12'
-    )
-SELECT id, placette, parcelle
-FROM D
-  NATURAL JOIN F
-  JOIN Plant USING (id)
-;
-
--- R10a.
--- On définit que deux plants sont semblables s’ils ont eu leur floraison initiale
--- à moins de 5 jours de distance et si le produit de leur longueur par leur largeur
--- diffère de moins de 10%.
---
--- Combien de plants semblables chacun des plants d’une parcelle donnée a-t-il
--- au sein de cette même parcelle ?
---
--- Pour chaque plant de la parcelle, donner l’étiquette, la placette, la parcelle,
--- la date de floraison initiale, le produit de la longueur par la largeur de feuille
--- et le nombre de plants semblables.
---
--- Deux plants semblables n’ont pas nécessaire le même de plants semblables...
--- Pourquoi ?
---
--- INTERROGATION
--- Que penser d’une relation de similitude qui, bien que réflexive et commutative,
--- n’est pas transitive ?
---
 -- CLARIFICATION
 --   1. À quel moment doit-on prendre les largeurs et les longueurs lorsqu’il y a
 --      plusieurs observations ? Nous prendrons la surface maximale atteinte.
