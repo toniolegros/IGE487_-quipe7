@@ -74,6 +74,18 @@ INSERT INTO Taux (tCat, tMin, tMax) VALUES ('F', 101, 120);
 INSERT INTO Placette (placette_id, peuplement, obs_F1, obs_F2, obs_C1, obs_C2, obs_T1, obs_T2, graminees, mousses, fougeres, arb_P1, arb_P2, arb_P3, date) VALUES
   ('P8', 'PEUP8', 'A', 'B', 'C', 'D', 'E', 'F', 'A', 'B', 'C', 8, 9, 10, '2025-10-08');
 
+-- Correction des dimensions hors normes
+DELETE FROM ObsDimension WHERE longueur > 150 OR largeur > 150;
+
+-- Correction des placettes incohérentes
+DELETE FROM Placette WHERE placette_id = 'A3';
+
+-- Correction des données dans Taux
+DELETE FROM Taux WHERE tMin < 0 OR tMax > 100;
+
+-- Correction des étiquettes non conformes
+UPDATE Plant SET note = 'étiquette corrigée' WHERE id = 'MMA9168';
+
 /*
 -- =========================================================================== Z
 ////

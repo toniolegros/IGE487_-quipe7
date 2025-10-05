@@ -155,8 +155,12 @@ CREATE TABLE CarnetMeteo
   CONSTRAINT CarnetMeteo_cr2 FOREIGN KEY (date) REFERENCES ObsHumidite (date),
   CONSTRAINT CarnetMeteo_cr3 FOREIGN KEY (date, prec_nat) REFERENCES ObsPrecipitations (date, prec_nat),
   CONSTRAINT CarnetMeteo_cr4 FOREIGN KEY (date) REFERENCES ObsVents (date),
-  CONSTRAINT CarnetMeteo_cr5 FOREIGN KEY (date) REFERENCES ObsPression (date)
-
+  CONSTRAINT CarnetMeteo_cr5 FOREIGN KEY (date) REFERENCES ObsPression (date),
+  CONSTRAINT chk_temp_range CHECK (temp_min <= temp_max),
+  CONSTRAINT chk_hum_range CHECK (hum_min <= hum_max),
+  CONSTRAINT chk_vent_range CHECK (vent_min <= vent_max),
+  CONSTRAINT chk_pres_range CHECK (pres_min <= pres_max),
+  CONSTRAINT chk_prec_tot CHECK (prec_tot >= 0)
 );
 
 

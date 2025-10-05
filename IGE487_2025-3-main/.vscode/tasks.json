@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run SQL Tests",
+			"type": "shell",
+			"command": "psql -U postgres -d meteo -f c:\\Users\\Utilisateur\\IGE487\\IGE487_-quipe7\\IGE487_2025-3-main\\TS\\J1\\Etapes_anterieures\\src\\Meteo_cre.sql",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		}
+	]
+}
