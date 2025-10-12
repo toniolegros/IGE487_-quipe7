@@ -23,13 +23,13 @@ Pour rappel, l’esquisse initiale du modèle logique est la suivante :
 
     Etat (etat, description)
       cle {etat};
-    Peuplement (peuplement, description)
+    Peuplement (peup, description)
       cle {peuplement};
     Arbre (arbre, description)
       cle {arbre};
     Taux {tCat, tMin, tMax}
       cle {tCat}
-    Placette {placette, peuplement,
+    Placette {placette, peu,
       obs_F1, obs_F2, obs_C1, obs_C2, obs_T1, obs_T2,
       graminees, mousses, fougeres,
       arb_P1, arb_P2, arb_P3,
@@ -92,8 +92,8 @@ SET SCHEMA 'Herbivorie' ;
 --
 CREATE DOMAIN Arbre_id
  -- Code identifiant uniquement une variété d’arbres.
-  integer
-  CHECK (VALUE >= 1);
+  text
+  CHECK (VALUE SIMILAR TO '[A-Z]{2}[0-9]{2}');
 
 CREATE DOMAIN Description
  -- Description textuelle consignée par l’observateur.
@@ -113,7 +113,7 @@ CREATE TABLE Arbre
 CREATE DOMAIN Peuplement_id
  -- Code identifiant uniquement un peuplement végétal de parcelle.
   TEXT
-  CHECK (VALUE SIMILAR TO '[A-Z]{4}');
+  CHECK (VALUE SIMILAR TO '[A-Z][0-9]{4}');
 
 CREATE TABLE Peuplement
  -- Répertoire des types de peuplement végétal d’une parcelle.
@@ -163,15 +163,15 @@ CREATE DOMAIN Placette_id
 CREATE DOMAIN Date_eco
  -- Date d’une observation écologique.
   DATE
-  CHECK (VALUE >= '1582-12-20');
+  CHECK (VALUE >= '1582-12-20' and value <= current_date);
 
-CREATE TABLE Placette
+/*CREATE TABLE Placette
  -- Description de la placette
  -- PRÉDICAT : La placette identifiée par "plac" a été caractérisée grâce aux observations
  --   faites en date du "date" et consignées grâce aux autres attributs décrits ci-après.
 (
   plac      Placette_id   NOT NULL, -- désignation de la placette
-  peup      Peuplement_id NOT NULL, -- type de peuplement de la placette
+  peup     Peuplement_id NOT NULL, -- type de peuplement de la placette
   obs_F1    Taux_id       NOT NULL, -- taux d’obstruction latérale feuillue moyenne à 1 m de hauteur
   obs_F2    Taux_id       NOT NULL, -- taux d’obstruction latérale feuillue moyenne à 2 m de hauteur
   obs_C1    Taux_id       NOT NULL, -- taux d’obstruction latérale coniférienne moyenne à 1 m de hauteur
@@ -184,7 +184,7 @@ CREATE TABLE Placette
   arb_P1    Arbre_id      NOT NULL, -- arbre dominant de la placette (1er rang)
   arb_P2    Arbre_id      NOT NULL, -- arbre dominant de la placette (2e rang)
   arb_P3    Arbre_id      NOT NULL, -- arbre dominant de la placette (3e rang)
-  date      Date_eco     default current_date, -- date à laquelle la description a été établie
+  date      Date_eco     not null, -- date à laquelle la description a été établie
   CONSTRAINT Placette_cc0 PRIMARY KEY (plac),
   CONSTRAINT Placette_cr_pe FOREIGN KEY (peup) REFERENCES Peuplement (peup),
   CONSTRAINT Placette_cr_f1 FOREIGN KEY (obs_F1) REFERENCES Taux (tCat),
@@ -198,14 +198,46 @@ CREATE TABLE Placette
   CONSTRAINT Placette_cr_fo FOREIGN KEY (fougeres) REFERENCES Taux (tCat),
   CONSTRAINT Placette_cr_p1 FOREIGN KEY (arb_P1) REFERENCES Arbre (arbre),
   CONSTRAINT Placette_cr_p2 FOREIGN KEY (arb_P2) REFERENCES Arbre (arbre),
-  CONSTRAINT Placette_cr_p3 FOREIGN KEY (arb_P3) REFERENCES Arbre (arbre)
+  CONSTRAINT Placette_cr_p3 FOREIGN KEY (arb_P3) REFERENCES Arbre (arbre),
+  CONSTRAINT arbres_distincts CHECK (arb_P1 <> arb_P2 AND arb_P2 <> arb_P3 AND arb_P1 <> arb_P3)
  -- NOTE : Comment vérifier que obs_T1.tMin >= obs_F1.tMin + obs_C1.tMin ?
  -- NOTE : Comment vérifier que obs_T2.tMin >= obs_F2.tMin + obs_C2.tMin ?
  -- NOTE : Que faudrait-il faire pour les tMax ?
  -- NOTE : Que faudrait-il suggérer aux collègues écologistes ?
  -- NOTE : Quels outils pourrions-nous leur fournir ?
+);*/
+CREATE TABLE Placette_core (
+ plac Placette_id PRIMARY KEY,
+ peup Peuplement_id NOT NULL REFERENCES Peuplement(peup),
+ date Date_eco NOT NULL
 );
 
+CREATE TYPE obstruction_nature AS ENUM ('feuillu','coniferien','total');
+CREATE TYPE hauteur_obs AS ENUM ('1m','2m');
+CREATE TABLE Placette_Obstruction (
+ plac Placette_id NOT NULL REFERENCES Placette_core(plac) ON DELETE CASCADE,
+ nature obstruction_nature NOT NULL,
+ hauteur hauteur_obs NOT NULL,
+ tcat Taux_id NOT NULL REFERENCES Taux(tCat),
+ PRIMARY KEY (plac, nature, hauteur)
+);
+
+CREATE TYPE couvert_type AS ENUM ('graminees','mousses','fougeres');
+CREATE TABLE Placette_Couvert (
+ plac Placette_id NOT NULL REFERENCES Placette_core(plac) ON DELETE CASCADE,
+ ctype couvert_type NOT NULL,
+ tcat  Taux_id NOT NULL REFERENCES Taux(tCat),
+ PRIMARY KEY (plac, ctype)
+);
+
+CREATE TABLE Placette_Dominant (
+ plac  Placette_id NOT NULL REFERENCES Placette_core(plac) ON DELETE CASCADE,
+ rang  smallint    NOT NULL CHECK (rang BETWEEN 1 AND 3),
+ arbre Arbre_id    NOT NULL REFERENCES Arbre(arbre),
+ PRIMARY KEY (plac, rang),
+ -- chaque arbre ne peut apparaître qu'une fois par placette
+ UNIQUE (plac, arbre)
+);
 --
 -- Description des plants recensés dans les placettes
 --
@@ -228,10 +260,10 @@ CREATE TABLE Plant
   id       Plant_id    NOT NULL, -- identifiant unique de chaque trille
   placette Placette_id NOT NULL, -- placette dans laquelle est le trille
   parcelle Parcelle    NOT NULL, -- parcelle dans laquelle se trouve le trille
-  date     Date_eco    default current_date, -- date de la prise de données
+  date     Date_eco    not null, -- date de la prise de données
   note     Description        NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT Plant_cc0 PRIMARY KEY (id),
-  CONSTRAINT Plant_cr0 FOREIGN KEY (placette) REFERENCES Placette (plac)
+  CONSTRAINT Plant_cr0 FOREIGN KEY (placette) REFERENCES Placette_core (plac)
 );
 
 CREATE DOMAIN Dim_mm
@@ -248,7 +280,7 @@ CREATE TABLE ObsDimension
   id       Plant_id NOT NULL, -- identifiant unique de chaque trille
   longueur Dim_mm   NOT NULL, -- longueur d’une des feuilles d’un trille, en mm
   largeur  Dim_mm   NOT NULL, -- largeur d’une des feuilles d’un trille, en mm
-  date     Date_eco default current_date, -- date de l’observation
+  date     Date_eco not null, -- date de l’observation
   note     Description     NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT ObsDimension_cc0 PRIMARY KEY (id, date),
   CONSTRAINT ObsDimension_cr0 FOREIGN KEY (id) REFERENCES Plant (id)
@@ -291,24 +323,37 @@ CREATE TABLE ObsEtat
 (
   id       Plant_id NOT NULL, -- identifiant unique de chaque trille
   etat     Etat_id  NOT NULL, -- état du plant
-  date     Date_eco default current_date, -- date de l’observation
+  date     Date_eco not null, -- date de l’observation
   note     Description     NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT ObsEtat_cc0 PRIMARY KEY (id, date),
   CONSTRAINT ObsEtat_cr0 FOREIGN KEY (id) REFERENCES Plant (id),
   CONSTRAINT ObsEtat_cr1 FOREIGN KEY (etat) REFERENCES Etat (etat)
 );
 
+
 -- Ajout de contraintes pour valider les références dans Placette
-ALTER TABLE Placette
+/*ALTER TABLE Placette
 ADD CONSTRAINT fk_obs_F1 FOREIGN KEY (obs_F1) REFERENCES Taux (tCat),
 ADD CONSTRAINT fk_obs_F2 FOREIGN KEY (obs_F2) REFERENCES Taux (tCat),
 ADD CONSTRAINT fk_obs_C1 FOREIGN KEY (obs_C1) REFERENCES Taux (tCat),
 ADD CONSTRAINT fk_obs_C2 FOREIGN KEY (obs_C2) REFERENCES Taux (tCat),
 ADD CONSTRAINT fk_obs_T1 FOREIGN KEY (obs_T1) REFERENCES Taux (tCat),
-ADD CONSTRAINT fk_obs_T2 FOREIGN KEY (obs_T2) REFERENCES Taux (tCat);
+ADD CONSTRAINT fk_obs_T2 FOREIGN KEY (obs_T2) REFERENCES Taux (tCat);*/
+
+ALTER TABLE Plant
+ADD CONSTRAINT chk_date_ident_future CHECK (date <= CURRENT_DATE);
+
+ALTER TABLE ObsFloraison
+ADD CONSTRAINT chk_date_obs_future CHECK (date <= CURRENT_DATE);
+
+ALTER TABLE ObsFloraison
+ADD CONSTRAINT fk_obsfloraison_plant FOREIGN KEY (id) REFERENCES Plant(id);
+
+ALTER TABLE Taux
+ADD CONSTRAINT chk_taux_pourcentage CHECK (tMin BETWEEN 0 AND 100 AND tMax BETWEEN 0 AND 100);
 
 -- Ajout de contraintes pour garantir une partition stricte dans Taux
-ALTER TABLE Taux
+/*ALTER TABLE Taux
 ADD CONSTRAINT check_taux_partition CHECK (
   NOT EXISTS (
     SELECT 1
@@ -317,7 +362,102 @@ ADD CONSTRAINT check_taux_partition CHECK (
       t1.tMin <= t2.tMax AND t1.tMax >= t2.tMin
     )
   )
-);
+);*/
+
+-- ======================================================================
+-- CONTRAINTES DE COHÉRENCE TEMPORELLE (TRIGGERS)
+-- ======================================================================
+
+-- Règle : la date d’observation ≥ date d’identification du plant
+CREATE OR REPLACE FUNCTION verif_date_obs() RETURNS TRIGGER AS $$
+DECLARE
+    date_ident_plant DATE;
+BEGIN
+    SELECT date INTO date_ident_plant FROM Plant WHERE id = NEW.id;
+
+    IF date_ident_plant IS NULL THEN
+        RAISE EXCEPTION 'Le plant % n''existe pas dans la table Plant.', NEW.id;
+    END IF;
+
+    IF NEW.date < date_ident_plant THEN
+        RAISE EXCEPTION
+            'Erreur : la date d''observation (%) ne peut précéder la date d''identification du plant (%)',
+            NEW.date, date_ident_plant;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_obs_dimension_date
+  BEFORE INSERT OR UPDATE ON ObsDimension
+  FOR EACH ROW EXECUTE FUNCTION verif_date_obs();
+
+CREATE TRIGGER trg_obs_floraison_date
+  BEFORE INSERT OR UPDATE ON ObsFloraison
+  FOR EACH ROW EXECUTE FUNCTION verif_date_obs();
+
+CREATE TRIGGER trg_obs_etat_date
+  BEFORE INSERT OR UPDATE ON ObsEtat
+  FOR EACH ROW EXECUTE FUNCTION verif_date_obs();
+
+-- ======================================================================
+-- CONTRAINTES DE COMPACTICITÉ DES TAUX (EX-TODO)
+-- ======================================================================
+
+-- Vérifie que pour chaque placette :
+-- tMin(taux_T1) >= tMin(taux_F1) + tMin(taux_C1)
+-- et tMax(taux_T2) <= tMax(taux_F2) + tMax(taux_C1)
+
+/*CREATE OR REPLACE FUNCTION verif_taux_compacite() RETURNS TRIGGER AS $$
+DECLARE
+    tf1 RECORD;
+    tc1 RECORD;
+    tt1 RECORD;
+    tf2 RECORD;
+    tc2 RECORD;
+    tt2 RECORD;
+BEGIN
+    -- Récupération des Taux pour la ligne insérée
+    SELECT * INTO tf1 FROM Taux WHERE tCat = NEW.obs_F1;
+    SELECT * INTO tc1 FROM Taux WHERE tCat = NEW.obs_C1;
+    SELECT * INTO tt1 FROM Taux WHERE tCat = NEW.obs_T1;
+
+    SELECT * INTO tf2 FROM Taux WHERE tCat = NEW.obs_F2;
+    SELECT * INTO tc2 FROM Taux WHERE tCat = NEW.obs_C2;
+    SELECT * INTO tt2 FROM Taux WHERE tCat = NEW.obs_T2;
+
+    -- Vérification existence des Taux
+    IF tf1 IS NULL OR tc1 IS NULL OR tt1 IS NULL
+       OR tf2 IS NULL OR tc2 IS NULL OR tt2 IS NULL THEN
+        RAISE EXCEPTION 'Un des Taux référencés n''existe pas';
+    END IF;
+
+    -- Vérification compacité pour T1
+    IF tt1.tMin < tf1.tMin + tc1.tMin THEN
+        RAISE EXCEPTION 'Incohérence taux : T1.tMin < F1.tMin + C1.tMin';
+    END IF;
+
+    IF tt1.tMax > tf1.tMax + tc1.tMax THEN
+        RAISE EXCEPTION 'Incohérence taux : T1.tMax > F1.tMax + C1.tMax';
+    END IF;
+
+    -- Vérification compacité pour T2
+    IF tt2.tMin < tf2.tMin + tc2.tMin THEN
+        RAISE EXCEPTION 'Incohérence taux : T2.tMin < F2.tMin + C2.tMin';
+    END IF;
+    IF tt2.tMax > tf2.tMax + tc2.tMax THEN
+        RAISE EXCEPTION 'Incohérence taux : T2.tMax > F2.tMax + C2.tMax';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_placette_taux
+  BEFORE INSERT OR UPDATE ON Placette_core
+  FOR EACH ROW EXECUTE FUNCTION verif_taux_compacite();*/
+
 
 /*
 -- =========================================================================== Z

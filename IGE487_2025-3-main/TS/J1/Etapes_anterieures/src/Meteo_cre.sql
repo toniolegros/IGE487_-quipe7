@@ -40,7 +40,7 @@ CREATE TABLE ObsTemperature
   --            était comprise entre "temp_min" et "temp_max".
   --            À cette occasion, l’observateur a consigné le commentaire "note".
 (
-  date      Date_eco default current_date,
+  date      Date_eco not null,
   temp_min  Temperature NOT NULL,
   temp_max  Temperature NOT NULL,
   note      TEXT NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE ObsHumidite
   -- PRÉDICAT : Il a été observé en date du "date" que la variation de l'humidité absolue
   --            était comprise entre "hum_min" et "hum_max".
 (
-  date      Date_eco default current_date,
+  date      Date_eco not null,
   hum_min   Humidite NOT NULL,
   hum_max   Humidite NOT NULL,
   CONSTRAINT ObsHumidite_cc0 PRIMARY KEY (date),
@@ -75,7 +75,7 @@ CREATE TABLE ObsVents
   -- PRÉDICAT : Il a été observé en date du "date" que la variation de la vitesse des vents
   --            était comprise entre "vent_min" et "vent_max".
 (
-  date      Date_eco default current_date,
+  date      Date_eco not null,
   vent_min  Vitesse NOT NULL,
   vent_max  Vitesse NOT NULL,
   CONSTRAINT ObsVents_cc0 PRIMARY KEY (date),
@@ -92,7 +92,7 @@ CREATE TABLE ObsPression
   -- PRÉDICAT : Il a été observé en date du "date" que la variation de la pression atmosphérique
   --            était comprise entre "vent_min" et "vent_max".
 (
-  date      Date_eco default current_date,
+  date      Date_eco not null,
   pres_min  Pression NOT NULL,
   pres_max  Pression NOT NULL,
   CONSTRAINT ObsPression_cc0 PRIMARY KEY (date),
@@ -126,7 +126,7 @@ CREATE TABLE ObsPrecipitations
   -- PRÉDICAT : Il a été observé en date du "date" que la hauteur normée totale des précipitations
   --            de type "prec_nat" était de "prec_tot".
 (
-  date      Date_eco default current_date,
+  date      Date_eco not null,
   prec_tot  HNP NOT NULL,
   prec_nat  Code_P NOT NULL,
   CONSTRAINT ObsPrecipitations_cc0 PRIMARY KEY (date, prec_nat),
@@ -148,7 +148,7 @@ CREATE TABLE CarnetMeteo
   vent_max  Vitesse not null ,   -- la vitesse maximale des vents (en km/h),
   pres_min  Pression not null ,   -- la pression atmosphérique minimale (en hPa),
   pres_max  Pression not null ,   -- la pression atmosphérique maximale (en hPa),
-  date      date_eco default current_date,   -- date de la prise de données
+  date      date_eco not null,   -- date de la prise de données
   -- JJ     text,   -- jour julien de la prise de données ; inutilisé dans le présent contexte
   note      text not null,   -- note supplémentaire à propos des conditions du jour
   CONSTRAINT CarnetMeteo_cr1 FOREIGN KEY (date) REFERENCES ObsTemperature (date),
@@ -159,6 +159,30 @@ CREATE TABLE CarnetMeteo
 
 );
 
+CREATE OR REPLACE FUNCTION verif_pression_vent()
+RETURNS TRIGGER AS $$
+DECLARE
+  vent_rec RECORD;
+BEGIN
+  -- On récupère les valeurs de vent observées le même jour
+  SELECT vent_min, vent_max
+  INTO vent_rec
+  FROM ObsVents
+  WHERE date = NEW.date;
+
+  -- Si aucune donnée de vent n’existe pour ce jour
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Aucune donnée de vent trouvée pour la date %', NEW.date;
+  END IF;
+
+  -- Vérifie la cohérence physique
+  IF NEW.pres_min < vent_rec.vent_min OR NEW.pres_max > vent_rec.vent_max THEN
+    RAISE EXCEPTION 'Incohérence entre pression et vent pour la date % : pres_min/pres_max en dehors des bornes', NEW.date;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 /*
 -- =========================================================================== Z
