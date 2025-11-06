@@ -37,11 +37,15 @@ DELETE FROM ObsDimension ;
 DELETE FROM ObsFloraison ;
 DELETE FROM ObsEtat ;
 DELETE FROM Plant ;
+DELETE FROM Plant1;
 DELETE FROM Placette ;
 DELETE FROM Etat ;
 DELETE FROM Taux ;
 DELETE FROM Peuplement ;
 DELETE FROM Arbre ;
+
+TRUNCATE TABLE Plant1;
+
 
 /*
 -- =========================================================================== Z
