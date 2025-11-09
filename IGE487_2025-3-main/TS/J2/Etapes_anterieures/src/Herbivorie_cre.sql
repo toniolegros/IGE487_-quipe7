@@ -165,6 +165,36 @@ CREATE DOMAIN Date_eco
   DATE
   CHECK (VALUE >= '1582-12-20' and value <= current_date);
 
+-- ===========================================================================
+-- Hiérarchie de localisation (J2)
+-- Site -> Zone -> Parcelle
+-- Ces tables permettent une identification absolue et reproductible des
+-- emplacements. Voir aussi Herbivorie_P2_M2.sql pour la version consolidée.
+CREATE TABLE IF NOT EXISTS Site (
+  site_id TEXT PRIMARY KEY,
+  nom TEXT NOT NULL,
+  description TEXT
+);
+COMMENT ON TABLE Site IS 'Site: unité géographique top-level (ex: zone d''étude)';
+
+CREATE TABLE IF NOT EXISTS Zone (
+  zone_id TEXT PRIMARY KEY,
+  site_id TEXT NOT NULL REFERENCES Site(site_id) ON DELETE RESTRICT,
+  nom TEXT NOT NULL,
+  description TEXT
+);
+COMMENT ON TABLE Zone IS 'Zone: subdivision d''un site';
+
+CREATE TABLE IF NOT EXISTS Parcelle (
+  parcelle_id SERIAL PRIMARY KEY,
+  site_id TEXT NOT NULL REFERENCES Site(site_id) ON DELETE RESTRICT,
+  zone_id TEXT NOT NULL REFERENCES Zone(zone_id) ON DELETE RESTRICT,
+  code TEXT NOT NULL,
+  description TEXT,
+  UNIQUE (site_id, zone_id, code)
+);
+COMMENT ON TABLE Parcelle IS 'Parcelle: subdivision localisée d''une placette';
+
 /*CREATE TABLE Placette
  -- Description de la placette
  -- PRÉDICAT : La placette identifiée par "plac" a été caractérisée grâce aux observations
@@ -218,17 +248,26 @@ CREATE TABLE Placette_Obstruction (
  plac Placette_id NOT NULL REFERENCES Placette_core(plac) ON DELETE CASCADE,
  nature obstruction_nature NOT NULL,
  hauteur hauteur_obs NOT NULL,
- tcat Taux_id NOT NULL REFERENCES Taux(tCat),
- PRIMARY KEY (plac, nature, hauteur)
+ -- Nouvelle colonne quantitative 'taux_pct' : pourcentage [0..100]
+ tcat Taux_id,
+ taux_pct INTEGER,
+ PRIMARY KEY (plac, nature, hauteur),
+ CONSTRAINT Placette_Obstruction_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat),
+ CONSTRAINT chk_placette_obstruction_taux_pct CHECK (taux_pct BETWEEN 0 AND 100)
 );
+COMMENT ON COLUMN Placette_Obstruction.taux_pct IS 'Taux d''obstruction en pourcentage (0..100). Utiliser pour nouvelles données (J2).';
 
 CREATE TYPE couvert_type AS ENUM ('graminees','mousses','fougeres');
 CREATE TABLE Placette_Couvert (
  plac Placette_id NOT NULL REFERENCES Placette_core(plac) ON DELETE CASCADE,
  ctype couvert_type NOT NULL,
- tcat  Taux_id NOT NULL REFERENCES Taux(tCat),
- PRIMARY KEY (plac, ctype)
+ tcat  Taux_id,
+ taux_pct INTEGER,
+ PRIMARY KEY (plac, ctype),
+ CONSTRAINT Placette_Couvert_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat),
+ CONSTRAINT chk_placette_couvert_taux_pct CHECK (taux_pct BETWEEN 0 AND 100)
 );
+COMMENT ON COLUMN Placette_Couvert.taux_pct IS 'Taux de couverture en pourcentage (0..100). Utiliser pour nouvelles données (J2).';
 
 CREATE TABLE Placette_Dominant (
  plac  Placette_id NOT NULL REFERENCES Placette_core(plac) ON DELETE CASCADE,
@@ -257,14 +296,16 @@ CREATE TABLE Plant
  --   placette "placette" en date du "date".
  --   À cette occasion, l’observateur a consigné le commentaire "note".
 (
-  id       Plant_id    NOT NULL, -- identifiant unique de chaque trille
-  placette Placette_id NOT NULL, -- placette dans laquelle est le trille
-  parcelle Parcelle    NOT NULL, -- parcelle dans laquelle se trouve le trille
+  id       Plant_id    NOT NULL, -- identifiant unique de chaque trille (identification absolue)
+  global_id TEXT UNIQUE, -- identifiant absolu indépendant de sa localisation (ex: tag, UUID)
+  placette Placette_id NOT NULL, -- placette dans laquelle est le trille (emplacement relatif)
+  parcelle Parcelle    NOT NULL, -- parcelle dans laquelle se trouve le trille (emplacement relatif)
   date     Date_eco    not null, -- date de la prise de données
   note     Description        NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT Plant_cc0 PRIMARY KEY (id),
   CONSTRAINT Plant_cr0 FOREIGN KEY (placette) REFERENCES Placette_core (plac)
 );
+COMMENT ON COLUMN Plant.global_id IS 'Identifiant absolu indépendant de la localisation (ex: tag physique, UUID).';
 
 CREATE DOMAIN Dim_mm
  -- Dimension d’une feuille de trille exprimée en millimètre.

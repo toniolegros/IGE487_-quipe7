@@ -142,19 +142,31 @@ CREATE TABLE Placette_Obstruction (
  plac Placette_id NOT NULL,
  nature obstruction_nature NOT NULL,
  hauteur hauteur_obs NOT NULL,
- tcat TTaux NOT NULL,
+ -- Remplacement du modèle catégoriel (tCat) par une mesure quantitative
+ -- NOTE : la colonne 'tcat' catégorielle est déconseillée ; on introduit
+ -- la colonne 'taux_pct' contenant un pourcentage [0..100] représentant la
+ -- proportion d'obstruction observée. La table Taux historique est conservée
+ -- pour compatibilité mais n'est plus requise pour les nouvelles données.
+ tcat TTaux,
+ taux_pct INTEGER,
  CONSTRAINT Placette_Obstruction_cc0 PRIMARY KEY (plac, nature, hauteur),
  CONSTRAINT Placette_Obstruction_cr0 FOREIGN KEY (plac) REFERENCES Placette_core(plac),
- CONSTRAINT Placette_Obstruction_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat)
+ CONSTRAINT Placette_Obstruction_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat),
+ CONSTRAINT chk_placette_obstruction_taux_pct CHECK (taux_pct BETWEEN 0 AND 100)
 );
 
 CREATE TABLE Placette_Couvert (
  plac Placette_id NOT NULL,
  ctype couvert_type NOT NULL,
- tcat  TTaux NOT NULL,
+ -- Comme pour l'obstruction, on remplace l'usage exclusif des codes Taux par
+ -- une mesure quantitative 'taux_pct' permettant d'exprimer la proportion en
+ -- pourcentage. La colonne catégorielle 'tcat' est laissée pour compatibilité.
+ tcat  TTaux,
+ taux_pct INTEGER,
  CONSTRAINT Placette_Couvert_cc0 PRIMARY KEY (plac, ctype),
  CONSTRAINT Placette_Couvert_cr0 FOREIGN KEY (plac) REFERENCES Placette_core(plac),
- CONSTRAINT Placette_Couvert_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat)
+ CONSTRAINT Placette_Couvert_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat),
+ CONSTRAINT chk_placette_couvert_taux_pct CHECK (taux_pct BETWEEN 0 AND 100)
 );
 
 CREATE TABLE Plant
@@ -163,14 +175,16 @@ CREATE TABLE Plant
  --   placette "placette" en date du "date".
  --   À cette occasion, l’observateur a consigné le commentaire "note".
 (
-  id       Plant_id    NOT NULL, -- identifiant unique de chaque trille
-  plac Placette_id NOT NULL, -- placette dans laquelle est le trille
-  parcelle Parcelle    NOT NULL, -- parcelle dans laquelle se trouve le trille
+  id       Plant_id    NOT NULL, -- identifiant unique de chaque trille (identification absolue)
+  global_id TEXT UNIQUE, -- identifiant absolu indépendant de sa localisation (ex: tag, UUID)
+  plac Placette_id NOT NULL, -- placette dans laquelle est le trille (emplacement relatif)
+  parcelle Parcelle    NOT NULL, -- parcelle dans laquelle se trouve le trille (emplacement relatif)
   date     Date_eco    not null, -- date de la prise de données
   note     Description        NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT Plant_cc0 PRIMARY KEY (id),
   CONSTRAINT Plant_cr0 FOREIGN KEY (plac) REFERENCES Placette_core (plac)
 );
+COMMENT ON COLUMN Plant.global_id IS 'Identifiant absolu indépendant de la localisation (ex: tag physique, UUID).';
 ALTER TABLE Plant ALTER COLUMN note DROP NOT NULL;
 
 CREATE TABLE ObsDimension
