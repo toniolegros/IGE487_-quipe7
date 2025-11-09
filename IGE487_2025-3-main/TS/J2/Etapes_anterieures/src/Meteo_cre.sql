@@ -1,0 +1,230 @@
+/*
+////
+-- =========================================================================== A
+-- Meteo_cre.sql
+-- ---------------------------------------------------------------------------
+Activité : IFT187_2025-1
+Encodage : UTF-8, sans BOM; fin de ligne Unix (LF)
+Plateforme : PostgreSQL 9.4 à 17
+Responsable : luc.lavoie@usherbrooke.ca
+Version : 0.1.1a
+Statut : base de développement
+Résumé : Ajout des tables d’observations météorologiques..
+-- =========================================================================== A
+*/
+
+/*
+-- =========================================================================== B
+////
+
+Création du schéma correspondant à la collecte de données du sous-projet Meteo
+du projet Herbivorie (voir [ddv]).
+
+////
+-- =========================================================================== B
+*/
+
+--
+-- Spécification du schéma
+--
+SET SCHEMA 'Herbivorie' ;
+
+CREATE DOMAIN Temperature
+  -- Température plausible de l'air ambiant dans le sud du Québec (en Celsius)
+  SMALLINT
+  CHECK (VALUE BETWEEN -50 AND 50);
+
+CREATE TABLE ObsTemperature
+  -- Répertoire des observations de température.
+  -- PRÉDICAT : Il a été observé en date du "date" que la variation de la température
+  --            était comprise entre "temp_min" et "temp_max".
+  --            À cette occasion, l’observateur a consigné le commentaire "note".
+(
+  date      Date_eco not null,
+  temp_min  Temperature NOT NULL,
+  temp_max  Temperature NOT NULL,
+  note      TEXT NOT NULL,
+  CONSTRAINT ObsTemperature_cc0 PRIMARY KEY (date),
+  CONSTRAINT ObsTemperature_inter CHECK (temp_min <= temp_max)
+);
+
+CREATE DOMAIN Humidite
+  -- Taux d’humidité absolue de l'air ambiant (en pourcentage)
+  SMALLINT
+  CHECK (VALUE BETWEEN 0 AND 100);
+
+CREATE TABLE ObsHumidite
+  -- Répertoire des observations de taux d'humidité.
+  -- PRÉDICAT : Il a été observé en date du "date" que la variation de l'humidité absolue
+  --            était comprise entre "hum_min" et "hum_max".
+(
+  date      Date_eco not null,
+  hum_min   Humidite NOT NULL,
+  hum_max   Humidite NOT NULL,
+  CONSTRAINT ObsHumidite_cc0 PRIMARY KEY (date),
+  CONSTRAINT ObsHumidite_inter CHECK (hum_min <= hum_max)
+);
+
+CREATE DOMAIN Vitesse
+  -- Vitesse des vents (en km/h)
+  SMALLINT
+  CHECK (VALUE BETWEEN 0 AND 300);
+
+CREATE TABLE ObsVents
+  -- Répertoire des observations de vitesse des vents.
+  -- PRÉDICAT : Il a été observé en date du "date" que la variation de la vitesse des vents
+  --            était comprise entre "vent_min" et "vent_max".
+(
+  date      Date_eco not null,
+  vent_min  Vitesse NOT NULL,
+  vent_max  Vitesse NOT NULL,
+  CONSTRAINT ObsVents_cc0 PRIMARY KEY (date),
+  CONSTRAINT ObsVents_inter CHECK (vent_min <= vent_max)
+);
+
+CREATE DOMAIN Pression
+  -- Pression atmosphérique (en hPa)
+  SMALLINT
+  CHECK (VALUE BETWEEN 900 AND 1100);
+
+CREATE TABLE ObsPression
+  -- Répertoire des observations de vitesse de pression atmosphérique.
+  -- PRÉDICAT : Il a été observé en date du "date" que la variation de la pression atmosphérique
+  --            était comprise entre "vent_min" et "vent_max".
+(
+  date      Date_eco not null,
+  pres_min  Pression NOT NULL,
+  pres_max  Pression NOT NULL,
+  CONSTRAINT ObsPression_cc0 PRIMARY KEY (date),
+  CONSTRAINT ObsPression_inter CHECK (pres_min <= pres_max)
+);
+
+CREATE DOMAIN HNP
+  -- Hauteur normée de précipitations (en mm)
+  SMALLINT
+  CHECK (VALUE BETWEEN 0 AND 500);
+
+CREATE DOMAIN Code_P
+  -- Code de type de précipitations
+  CHAR(1)
+  CHECK (VALUE BETWEEN 'A' AND 'Z');
+
+CREATE TABLE TypePrecipitations
+  -- Répertoire des type de  précipitation.
+(
+  code      Code_P NOT NULL,
+  libelle   TEXT NOT NULL,
+  CONSTRAINT TypePrecipitations_cc0 PRIMARY KEY (code)
+);
+
+INSERT INTO TypePrecipitations (code, libelle) VALUES ('G', 'Grêle') ;
+INSERT INTO TypePrecipitations (code, libelle) VALUES ('N', 'Neige') ;
+INSERT INTO TypePrecipitations (code, libelle) VALUES ('P', 'Pluie') ;
+
+CREATE TABLE ObsPrecipitations
+  -- Répertoire des observations de l'envergure des précipitations.
+  -- PRÉDICAT : Il a été observé en date du "date" que la hauteur normée totale des précipitations
+  --            de type "prec_nat" était de "prec_tot".
+(
+  date      Date_eco not null,
+  prec_tot  HNP NOT NULL,
+  prec_nat  Code_P NOT NULL,
+  CONSTRAINT ObsPrecipitations_cc0 PRIMARY KEY (date, prec_nat),
+  CONSTRAINT ObsPrecipitations_cr FOREIGN KEY (prec_nat) REFERENCES TypePrecipitations (code)
+);
+
+CREATE TABLE CarnetMeteo
+  -- Carnet de terrain contenant les données brutes des observations météorologiques.
+  -- La table est utilisée afin de vérifier les données en vue de leur insertion
+  -- dans le modèle de données.
+(
+  temp_min  Temperature not null ,   -- la température minimale,
+  temp_max  Temperature not null ,   -- la température maximale,
+  hum_min   Humidite not null ,   -- le taux d’humidité absolue minimal (en pourcentage),
+  hum_max   Humidite not null ,   -- le taux d’humidité absolue maximal (en pourcentage),
+  prec_tot  HNP not null ,   -- les précipitations totales (en mm),
+  prec_nat  Code_P not null ,   -- la nature des précipitations (un texte codifié, voir Code_P et TypePrecipitations),
+  vent_min  Vitesse not null ,   -- la vitesse minimale des vents (en km/h),
+  vent_max  Vitesse not null ,   -- la vitesse maximale des vents (en km/h),
+  pres_min  Pression not null ,   -- la pression atmosphérique minimale (en hPa),
+  pres_max  Pression not null ,   -- la pression atmosphérique maximale (en hPa),
+  date      date_eco not null,   -- date de la prise de données
+  -- JJ     text,   -- jour julien de la prise de données ; inutilisé dans le présent contexte
+  note      text not null,   -- note supplémentaire à propos des conditions du jour
+  CONSTRAINT CarnetMeteo_cr1 FOREIGN KEY (date) REFERENCES ObsTemperature (date),
+  CONSTRAINT CarnetMeteo_cr2 FOREIGN KEY (date) REFERENCES ObsHumidite (date),
+  CONSTRAINT CarnetMeteo_cr3 FOREIGN KEY (date, prec_nat) REFERENCES ObsPrecipitations (date, prec_nat),
+  CONSTRAINT CarnetMeteo_cr4 FOREIGN KEY (date) REFERENCES ObsVents (date),
+  CONSTRAINT CarnetMeteo_cr5 FOREIGN KEY (date) REFERENCES ObsPression (date),
+  CONSTRAINT chk_temp_range CHECK (temp_min <= temp_max),
+  CONSTRAINT chk_hum_range CHECK (hum_min <= hum_max),
+  CONSTRAINT chk_vent_range CHECK (vent_min <= vent_max),
+  CONSTRAINT chk_pres_range CHECK (pres_min <= pres_max),
+  CONSTRAINT chk_prec_tot CHECK (prec_tot >= 0)
+);
+
+CREATE OR REPLACE FUNCTION verif_pression_vent()
+RETURNS TRIGGER AS $$
+DECLARE
+  vent_rec RECORD;
+BEGIN
+  -- On récupère les valeurs de vent observées le même jour
+  SELECT vent_min, vent_max
+  INTO vent_rec
+  FROM ObsVents
+  WHERE date = NEW.date;
+
+  -- Si aucune donnée de vent n’existe pour ce jour
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Aucune donnée de vent trouvée pour la date %', NEW.date;
+  END IF;
+
+  -- Vérifie la cohérence physique
+  IF NEW.pres_min < vent_rec.vent_min OR NEW.pres_max > vent_rec.vent_max THEN
+    RAISE EXCEPTION 'Incohérence entre pression et vent pour la date % : pres_min/pres_max en dehors des bornes', NEW.date;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+/*
+-- =========================================================================== Z
+////
+.Contributeurs
+* (LL01) luc.lavoie@usherbrooke.ca
+
+.Tâches projetées
+* 2022-02-10 LL01. Généraliser.
+  - Introduire les concepts d’unité de mesure, de type de mesure, etc.
+  - Introduire un mécanisme paramétrable de vérification générale des mesures.
+  - Rendre le tout évolutif.
+* 2022-01-23 LL01. Compléter le schéma.
+  - Mieux documenter conjointement Herbivorie et Meteo.
+  - Affiner le mécanisme d’ELT.
+  - Développer des jeux de données.
+
+.Tâches réalisées
+* 2022-01-17 LL01. Création.
+  - Création du schéma de base.
+  - Validation minimale du carnet d’observations (voir test0).
+  - Importation des observations intègres (voir ini).
+
+.Références
+* {CoFELI}/Exemple/Herbivorie/pub/Herbivorie_EPP.pdf
+////
+
+.Adresse, droits d’auteur et copyright
+  Groupe Metis
+  Département d’informatique
+  Faculté des sciences
+  Université de Sherbrooke
+  Sherbrooke (Québec)  J1K 2R1
+  Canada
+  http://info.usherbrooke.ca/llavoie/
+  [CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0)]
+
+-- -----------------------------------------------------------------------------
+-- fin de {CoFELI}/Exemple/Herbivorie/src/Meteo_cre.sql
+-- =========================================================================== Z
+*/
