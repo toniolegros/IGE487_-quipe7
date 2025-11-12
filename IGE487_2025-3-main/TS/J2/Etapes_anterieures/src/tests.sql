@@ -2,20 +2,17 @@
 -- CREATE SCHEMA "Herbivorie";
 SET SCHEMA 'Herbivorie';
 
--- Données de référence (commentées pour usage ultérieur)
-/*
-INSERT INTO Arbre (arbre, description) VALUES ('AS98', 'ARBRE1'), ('AS89', 'ARBRE2');
-INSERT INTO PEUPLEMENT (PEUP, DESCRIPTION) VALUES ('A3444','PEUP1'), ('A3445','PEUP2');
-INSERT INTO PLACETTE_CORE (PLAC, PEUP, DATE) VALUES ('A1','A3444','2025-10-30'), ('A2','A3445','2025-10-31');
-INSERT INTO PLACETTE_DOMINANT (PLAC, RANG, ARBRE) VALUES ('A1','2','AS98'), ('A2','1','AS89');
-INSERT INTO TAUX (TCAT, TMIN, TMAX) VALUES ('A', 0, 25), ('B', 25, 50);
-INSERT INTO placette_couvert (plac, ctype, tcat) VALUES ('A1', 'graminees', 'A'), ('A2', 'mousses', 'B');
-INSERT INTO placette_obstruction (plac, nature, hauteur, tcat) VALUES ('A1', 'feuillu', '1m', 'A'), ('A2', 'coniferien', '2m', 'B');
+INSERT INTO "Herbivorie".placette (plac)
+SELECT placette_conv(placette1::text)
+FROM megantic
+WHERE placette_verif(placette1::text)
+GROUP BY placette1;
 
-SELECT p.plac, p.peup, p.date, pe.description
-FROM placette_core AS p
-JOIN peuplement AS pe ON p.peup = pe.peup;
-*/
+INSERT INTO "Herbivorie".placette_core (plac, peup, date)
+SELECT placette_conv(placette1::text),
+FROM megantic
+WHERE placette_verif(placette1::text)
+GROUP BY placette1;
 
 -- Insertion dans la table Plant
 INSERT INTO Plant (id, plac, parcelle, date, note)
@@ -32,8 +29,15 @@ WHERE plant_verif(id)
   --AND date_eco_verif(date :: text)
  -- AND description_verif(note);
 
-INSERT INTO plant1 (id,plac) select plant_conv(id), placette_conv(placette) from megantic where plant_verif(id)and placette_verif(placette);
+INSERT INTO plant1 (id,plac) select plant_conv(id), placette_conv(placette) from megantic where plant_verif(id) and placette_verif(placette);
 
+DROP FUNCTION IF EXISTS placette_conv(text);
+DROP FUNCTION IF EXISTS placette_conv("Herbivorie".placette_id);
+
+
+INSERT INTO Parcelle1 (plac, parcelle) select placette_conv(plac),parcelle_conv(parcelle) from megantic where placette_verif(placette) and parcelle_verif(sous_parcelle);
+
+SELECT * FROM "Herbivorie".placette_core WHERE plac = 'A1';
 -- Insertion dans la table ObsDimension
 INSERT INTO ObsDimension
 SELECT

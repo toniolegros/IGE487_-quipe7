@@ -80,13 +80,43 @@ CREATE DOMAIN Etat_id
   TEXT
   CHECK (VALUE SIMILAR TO '[A-Z]{1}');
 
+CREATE DOMAIN Site_id
+TEXT
+CHECK(VALUE SIMILAR TO '[A-Z]{2}[0-9]{2}');
+
+CREATE DOMAIN Zone_id
+    TEXT
+    CHECK(VALUE SIMILAR TO 'MM[A-C]');
+
 --CRATION DES TABLES
+
+CREATE TABLE Site
+(id Site_id NOT NULL,
+site Description NOT NULL,
+description Description,
+CONSTRAINT site_cc0 primary key (id)
+);
+COMMENT ON TABLE Site IS 'Site: unité géographique (ex: zone d''étude).';
+COMMENT ON COLUMN site.id IS 'Identifiant du site (ex: SA01)';
+COMMENT ON COLUMN Site.site IS 'Nom lisible du site';
+
+CREATE TABLE Zone(
+    zone zone_id not null ,
+    id Site_id NOT NULL,
+    description description,
+    constraint zone_cc0 primary key (zone),
+    constraint zone_cr0 foreign key (id) references site(id)
+
+);
+COMMENT ON TABLE Zone IS 'Zone: subdivision d''un site. (Site -> Zone -> Placette)';
+COMMENT ON COLUMN Zone.id IS 'Référence au Site parent';
+
 CREATE TABLE Peuplement
  -- Répertoire des types de peuplement végétal d’une parcelle.
  -- PRÉDICAT : Le type de peuplement identifié par "peup" correspond à la description "description".
 (
   peup        Peuplement_id NOT NULL,
-  description Description   NOT NULL,
+  description Description,
   CONSTRAINT Peuplement_cc0 PRIMARY KEY (peup)
 );
 
@@ -95,7 +125,7 @@ CREATE TABLE Arbre
  -- PRÉDICAT : La variété d’arbres identifiée par "arbre" correspond à la description "description".
 (
   arbre       Arbre_id    not null ,
-  description Description NOT NULL,
+  description Description,
   CONSTRAINT Arbre_cc0 PRIMARY KEY (arbre)
 );
 
@@ -119,11 +149,35 @@ CREATE TABLE Taux
   CONSTRAINT Taux_inter CHECK (tMin <= tMax)
 );
 
+
+CREATE TABLE Taux_valeur (
+  id SERIAL PRIMARY KEY,
+  tCat TTaux NOT NULL,
+  tVal Taux_val NOT NULL,
+  FOREIGN KEY (tCat) REFERENCES Taux (tCat)
+);
+
+CREATE TABLE UNITE(
+    UNITE_ID INTEGER NOT NULL,
+    UNITE TEXT NOT NULL,
+    DESCRIPTION description,
+    CONSTRAINT UNITE_CC0 PRIMARY KEY (UNITE_ID)
+);
+COMMENT ON TABLE Unite IS 'Unité de mesure (ex: mm, °C, %).';
+COMMENT ON COLUMN Unite.unite_id IS 'Code unité (ex: mm, °C, %)';
+
+CREATE TABLE Placette(
+ zone Zone_id not null,
+ plac Placette_id not null,
+CONSTRAINT placette_cc0 PRIMARY KEY (plac),
+constraint placette_cr0 foreign key (zone) references Zone(zone)
+);
+
 CREATE TABLE Placette_core (
  plac Placette_id not null,
- peup Peuplement_id NOT NULL,
+ peup Peuplement_id,
  date Date_eco NOT NULL,
-CONSTRAINT placette_core_cc0 PRIMARY KEY (plac),
+CONSTRAINT placette_core_cc0 foreign key (plac) references Placette(plac),
 CONSTRAINT Placette_core_cr0 FOREIGN KEY (peup) REFERENCES Peuplement(peup)
 );
 
@@ -134,7 +188,7 @@ CREATE TABLE Placette_Dominant (
  -- chaque arbre ne peut apparaître qu'une fois par placette
 UNIQUE (plac, arbre),
 CONSTRAINT placette_Dominant_cc0 PRIMARY KEY (plac, rang),
-CONSTRAINT Placette_Dominant_cr0 FOREIGN KEY (plac) REFERENCES placette_core(plac),
+CONSTRAINT Placette_Dominant_cr0 FOREIGN KEY (plac) REFERENCES placette(plac),
 CONSTRAINT Placette_Dominant_cr1 FOREIGN KEY (arbre) REFERENCES arbre(arbre)
 );
 
@@ -144,7 +198,7 @@ CREATE TABLE Placette_Obstruction (
  hauteur hauteur_obs NOT NULL,
  tcat TTaux NOT NULL,
  CONSTRAINT Placette_Obstruction_cc0 PRIMARY KEY (plac, nature, hauteur),
- CONSTRAINT Placette_Obstruction_cr0 FOREIGN KEY (plac) REFERENCES Placette_core(plac),
+ CONSTRAINT Placette_Obstruction_cr0 FOREIGN KEY (plac) REFERENCES Placette(plac),
  CONSTRAINT Placette_Obstruction_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat)
 );
 
@@ -153,9 +207,16 @@ CREATE TABLE Placette_Couvert (
  ctype couvert_type NOT NULL,
  tcat  TTaux NOT NULL,
  CONSTRAINT Placette_Couvert_cc0 PRIMARY KEY (plac, ctype),
- CONSTRAINT Placette_Couvert_cr0 FOREIGN KEY (plac) REFERENCES Placette_core(plac),
+ CONSTRAINT Placette_Couvert_cr0 FOREIGN KEY (plac) REFERENCES Placette(plac),
  CONSTRAINT Placette_Couvert_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat)
 );
+
+CREATE TABLE Parcelle1 (
+  plac Placette_id NOT NULL, -- placette dans laquelle est le trille
+  parcelle Parcelle    NOT NULL, -- parcelle dans laquelle se trouve le trille
+  CONSTRAINT PARCELLE_cr0 FOREIGN KEY (plac) REFERENCES Placette (plac)
+);
+
 
 CREATE TABLE Plant
  -- Répertoire des plants de trille et de leur emplacement.
@@ -165,13 +226,12 @@ CREATE TABLE Plant
 (
   id       Plant_id    NOT NULL, -- identifiant unique de chaque trille
   plac Placette_id NOT NULL, -- placette dans laquelle est le trille
-  parcelle Parcelle    NOT NULL, -- parcelle dans laquelle se trouve le trille
   date     Date_eco    not null, -- date de la prise de données
-  note     Description        NOT NULL, -- note supplémentaire à propos du trille
+  note     Description, -- note supplémentaire à propos du trille
   CONSTRAINT Plant_cc0 PRIMARY KEY (id),
-  CONSTRAINT Plant_cr0 FOREIGN KEY (plac) REFERENCES Placette_core (plac)
+  CONSTRAINT Plant_cr0 FOREIGN KEY (plac) REFERENCES Placette (plac)
 );
-ALTER TABLE Plant ALTER COLUMN note DROP NOT NULL;
+-- ALTER TABLE Plant ALTER COLUMN note DROP NOT NULL;
 
 CREATE TABLE ObsDimension
  -- Répertoire des observations de dimension de plants de trille.
@@ -183,7 +243,7 @@ CREATE TABLE ObsDimension
   longueur Dim_mm   NOT NULL, -- longueur d’une des feuilles d’un trille, en mm
   largeur  Dim_mm   NOT NULL, -- largeur d’une des feuilles d’un trille, en mm
   date     Date_eco not null, -- date de l’observation
-  note     Description     NOT NULL, -- note supplémentaire à propos du trille
+  note     Description, -- note supplémentaire à propos du trille
   CONSTRAINT ObsDimension_cc0 PRIMARY KEY (id, date),
   CONSTRAINT ObsDimension_cr0 FOREIGN KEY (id) REFERENCES Plant (id)
 );
@@ -196,7 +256,7 @@ CREATE TABLE ObsFloraison
   id       Plant_id NOT NULL, -- identifiant unique de chaque trille
   fleur    BOOLEAN  NOT NULL, -- présence de fleur
   date     Date_eco NOT NULL, -- date de l’observation
-  note     Description     NOT NULL, -- note supplémentaire à propos du trille
+  note     Description, -- note supplémentaire à propos du trille
   CONSTRAINT ObsFloraison_cc0 PRIMARY KEY (id, date),
   CONSTRAINT ObsFloraison_cr0 FOREIGN KEY (id) REFERENCES Plant (id)
 );
@@ -206,7 +266,7 @@ CREATE TABLE Etat
  -- PRÉDICAT : L’état d’un plant identifié par "etat" correspond à la description "description".
 (
   etat        Etat_id     NOT NULL,
-  description Description NOT NULL,
+  description Description,
   CONSTRAINT Etat_cc0 PRIMARY KEY (etat)
 );
 
@@ -218,7 +278,7 @@ CREATE TABLE ObsEtat
   id       Plant_id NOT NULL, -- identifiant unique de chaque trille
   etat     Etat_id  NOT NULL, -- état du plant
   date     Date_eco not null, -- date de l’observation
-  note     Description     NOT NULL, -- note supplémentaire à propos du trille
+  note     Description, -- note supplémentaire à propos du trille
   CONSTRAINT ObsEtat_cc0 PRIMARY KEY (id, date),
   CONSTRAINT ObsEtat_cr0 FOREIGN KEY (id) REFERENCES Plant (id),
   CONSTRAINT ObsEtat_cr1 FOREIGN KEY (etat) REFERENCES Etat (etat)
@@ -228,5 +288,19 @@ CREATE TABLE PLANT1
 (id Plant_id NOT NULL,
 PLAC Placette_id NOT NULL,
 CONSTRAINT plant1_cr0 PRIMARY KEY (id),
-CONSTRAINT plant1_cc0 FOREIGN KEY (plac) references placette_core(plac)
+CONSTRAINT plant1_cc0 FOREIGN KEY (plac) references placette(plac)
 );
+
+CREATE OR REPLACE FUNCTION verif_taux_valide()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM Taux
+    WHERE tCat = NEW.tCat
+      AND NEW.tVal BETWEEN tMin AND tMax
+  ) THEN
+    RAISE EXCEPTION 'Le taux % est invalide pour la catégorie %', NEW.tVal, NEW.tCat;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;

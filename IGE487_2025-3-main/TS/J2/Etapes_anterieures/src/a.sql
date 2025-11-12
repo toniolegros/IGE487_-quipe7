@@ -3,11 +3,11 @@ SET SCHEMA 'Herbivorie';
 
 CREATE TABLE Megantic (
     id  plant_id,
-    placette placette_id,
+    placette1 text,
     longueur dim_mm,
     largeur dim_mm,
     fleur Text,
-    sous_parcelle parcelle,
+    sous_parcelle text,
     date date_eco,
     JJ dim_mm,
     etat etat_id,
@@ -15,6 +15,8 @@ CREATE TABLE Megantic (
     --statut VARCHAR(20) DEFAULT 'EN_ATTENTE',
    -- date_integration TIMESTAMP DEFAULT NOW()
 );
+
+
 
 CREATE TABLE Log_Integration (
     id_log SERIAL PRIMARY KEY,

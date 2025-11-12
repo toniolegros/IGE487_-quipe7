@@ -138,6 +138,7 @@ CREATE TABLE CarnetMeteo
   -- La table est utilisée afin de vérifier les données en vue de leur insertion
   -- dans le modèle de données.
 (
+  zone "Herbivorie".zone_id not null,
   temp_min  Temperature not null ,   -- la température minimale,
   temp_max  Temperature not null ,   -- la température maximale,
   hum_min   Humidite not null ,   -- le taux d’humidité absolue minimal (en pourcentage),
@@ -148,9 +149,11 @@ CREATE TABLE CarnetMeteo
   vent_max  Vitesse not null ,   -- la vitesse maximale des vents (en km/h),
   pres_min  Pression not null ,   -- la pression atmosphérique minimale (en hPa),
   pres_max  Pression not null ,   -- la pression atmosphérique maximale (en hPa),
-  date      date_eco not null,   -- date de la prise de données
+  date      "Herbivorie".date_eco not null,   -- date de la prise de données
   -- JJ     text,   -- jour julien de la prise de données ; inutilisé dans le présent contexte
   note      text not null,   -- note supplémentaire à propos des conditions du jour
+  CONSTRAINT CarnetMeteo_pk PRIMARY KEY (zone, date),
+  CONSTRAINT CarnetMeteo_fk_zone FOREIGN KEY (zone) REFERENCES Zone(zone),
   CONSTRAINT CarnetMeteo_cr1 FOREIGN KEY (date) REFERENCES ObsTemperature (date),
   CONSTRAINT CarnetMeteo_cr2 FOREIGN KEY (date) REFERENCES ObsHumidite (date),
   CONSTRAINT CarnetMeteo_cr3 FOREIGN KEY (date, prec_nat) REFERENCES ObsPrecipitations (date, prec_nat),
