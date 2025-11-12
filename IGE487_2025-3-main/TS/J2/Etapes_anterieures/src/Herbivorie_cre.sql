@@ -292,7 +292,6 @@ CREATE TABLE ObsFloraison
  --   À cette occasion, l’observateur a consigné le commentaire "note".
 (
   id       Plant_id NOT NULL, -- identifiant unique de chaque trille
-  fleur    BOOLEAN  NOT NULL, -- présence de fleur
   date     Date_eco NOT NULL, -- date de l’observation
   note     Description     NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT ObsFloraison_cc0 PRIMARY KEY (id, date),
