@@ -37,26 +37,26 @@ END;
 $$;
 
 --Site
-CREATE OR REPLACE FUNCTION Etat_verif(v text)
+CREATE OR REPLACE FUNCTION Site_verif(v text)
 RETURNS boolean
 LANGUAGE plpgsql AS $$
 BEGIN
-  RETURN v IN (SELECT etat FROM Etat);
+  RETURN v IN (SELECT id FROM site);
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION Etat_CONV(v text)
-RETURNS Etat_id
+CREATE OR REPLACE FUNCTION site_CONV(v text)
+RETURNS site_id
 LANGUAGE plpgsql AS $$
 DECLARE
-  result Etat_id;
+  result site_id;
 BEGIN
-  result := v::Etat_id;
+  result := v::site_id;
   RETURN result;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION Etat_verif(v Etat_id)
+CREATE OR REPLACE FUNCTION site_verif(v Etat_id)
 RETURNS boolean
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -64,8 +64,8 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION Etat_CONV(v Etat_id)
-RETURNS Etat_id
+CREATE OR REPLACE FUNCTION site_CONV(v Etat_id)
+RETURNS site_id
 LANGUAGE plpgsql AS $$
 BEGIN
   RETURN v;
@@ -226,7 +226,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION Plant_CONV(v text)
-RETURNS placette_id
+RETURNS plant_id
 LANGUAGE plpgsql AS $$
 DECLARE
   result plant_id;
@@ -439,8 +439,15 @@ $$;
 CREATE OR REPLACE FUNCTION Etat_verif(v text)
 RETURNS boolean
 LANGUAGE plpgsql AS $$
+DECLARE
+  result Etat_id;
 BEGIN
-  RETURN v IN (SELECT etat FROM Etat);
+  BEGIN
+    result := upper(btrim(v))::Etat_id;
+    RETURN TRUE;
+  EXCEPTION WHEN others THEN
+    RETURN FALSE;
+  END;
 END;
 $$;
 
@@ -450,7 +457,7 @@ LANGUAGE plpgsql AS $$
 DECLARE
   result Etat_id;
 BEGIN
-  result := v::Etat_id;
+  result := upper(btrim(v))::Etat_id;
   RETURN result;
 END;
 $$;

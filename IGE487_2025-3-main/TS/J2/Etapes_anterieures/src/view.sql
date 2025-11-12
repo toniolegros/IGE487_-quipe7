@@ -167,10 +167,10 @@ COMMENT ON TABLE Unite IS 'Unité de mesure (ex: mm, °C, %).';
 COMMENT ON COLUMN Unite.unite_id IS 'Code unité (ex: mm, °C, %)';
 
 CREATE TABLE Placette(
- zone Zone_id not null,
+ --zone Zone_id not null,
  plac Placette_id not null,
-CONSTRAINT placette_cc0 PRIMARY KEY (plac),
-constraint placette_cr0 foreign key (zone) references Zone(zone)
+CONSTRAINT placette_cc0 PRIMARY KEY (plac)
+--constraint placette_cr0 foreign key (zone) references Zone(zone)
 );
 
 CREATE TABLE Placette_core (
