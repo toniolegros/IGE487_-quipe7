@@ -130,6 +130,37 @@ BEFORE INSERT OR UPDATE ON Taux
 FOR EACH ROW
 EXECUTE FUNCTION Verif_Taux();
 
+---------------------------------
+-- Y4:  Retirer les données météorologiques pour une période donnée (date de début, date de fin) si la température minimale rapportée est en deçà d’une température donnée. --
+---------------------------------
+
+CREATE OR REPLACE PROCEDURE SupprimerDonneesMeteo(
+    IN p_date_debut DATE,
+    IN p_date_fin DATE,
+    IN p_temp_min NUMERIC
+)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+    -- Supprime les carnets météo dont la température minimale
+    -- observée est en deçà du seuil spécifié
+    DELETE FROM CarnetMeteo cm
+    WHERE cm.date BETWEEN p_date_debut AND p_date_fin
+      AND EXISTS (
+          SELECT 1
+          FROM Observation o
+          JOIN ObsTemperature t ON t.observation_id = o.observation_id
+          WHERE o.carnet_meteo_id = cm.carnet_meteo_id
+            AND t.temp_min < p_temp_min
+      );
+END;
+$$;
+
+-------------------------
+-------- fin Y4 ---------
+-------------------------
+
 -- Nouvelle table ObsFloraison
 
 CREATE TABLE ObsFloraison_new (
@@ -152,3 +183,5 @@ DROP TABLE ObsFloraison;
 
 ALTER TABLE ObsFloraison_new
 RENAME TO ObsFloraison;
+
+
