@@ -7,11 +7,11 @@ LANGUAGE plpgsql AS $$
 DECLARE
   d date;
 BEGIN
-  -- Tentative de conversion sécurisée
+
   BEGIN
     d := v::date;
   EXCEPTION WHEN others THEN
-    -- Si la conversion échoue (format pourri, valeur impossible)
+
     RETURN FALSE;
   END;
   RETURN v::date >= DATE '1582-12-20' AND v::date <= current_date;
@@ -122,11 +122,11 @@ LANGUAGE plpgsql AS $$
 DECLARE
   tmp obstruction_nature;
 BEGIN
-  -- On tente le cast, mais on NE laisse pas l'exception remonter
+
   BEGIN
     tmp := v::obstruction_nature;
   EXCEPTION WHEN others THEN
-    RETURN FALSE;          -- valeur invalide (ex: 'rocheux')
+    RETURN FALSE;
   END;
 
   RETURN TRUE;
@@ -139,7 +139,7 @@ LANGUAGE plpgsql AS $$
 DECLARE
   result obstruction_nature;
 BEGIN
-  -- Si ce n’est pas valide, on renvoie NULL (et l’ELT filtrera)
+
   IF NOT ObstructionNature_verif(v) THEN
     RETURN NULL;
   END IF;
@@ -159,7 +159,7 @@ CREATE OR REPLACE FUNCTION ObstructionNature_verif(v obstruction_nature)
 RETURNS boolean
 LANGUAGE plpgsql AS $$
 BEGIN
-  -- Une valeur déjà typée obstruction_nature est forcément valide
+
   RETURN TRUE;
 END;
 $$;
@@ -236,9 +236,9 @@ DECLARE
   tmp couvert_type;
 BEGIN
   BEGIN
-    tmp := v::couvert_type;   -- 'herbes' va tomber ici
+    tmp := v::couvert_type;
   EXCEPTION WHEN others THEN
-    RETURN FALSE;             -- on NE jette PAS d'exception, on renvoie FALSE
+    RETURN FALSE;
   END;
 
   RETURN TRUE;

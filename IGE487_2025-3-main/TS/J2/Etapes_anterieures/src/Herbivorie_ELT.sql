@@ -2,14 +2,15 @@
 -- CREATE SCHEMA "Herbivorie";
 SET SCHEMA 'Herbivorie';
 
--- ==================
---  SITE_BASE : INSERT
--- ==================
+
 create or replace procedure Megantic_ELT ()
 language plpgsql as
 $$
 begin
 
+-- ==================
+--  SITE_BASE : INSERT
+-- ==================
 WITH src AS (
   SELECT DISTINCT
     site_id,
@@ -33,9 +34,6 @@ WHERE
   AND description_conv(s.description_site) IS NOT NULL
 ON CONFLICT DO NOTHING;
 
--- =================
---  SITE_BASE : REJETS
--- =================
 -- SITE_BASE : journalisation des rejets
 WITH src AS (
   SELECT
@@ -87,7 +85,6 @@ SELECT
   'Megantic_ELT - SITE_BASE' AS details,
     ligne_raw AS ligne,
 
-  -- 🆕 Colonne "attributs" : liste des attributs fautifs avec leur valeur
   concat_ws(
     ', ',
     CASE WHEN NOT ok_site_id
@@ -153,12 +150,10 @@ WITH src AS (
     m.*,
     to_jsonb(m) AS ligne_raw,
 
-    -- Vérifications brutes
     COALESCE(site_verif(m.site_id), false)                  AS ok_site_id,
     COALESCE(zone_verif(m.zone), false)                     AS ok_zone,
     COALESCE(description_verif(m.description_zone), false)  AS ok_desc,
 
-    -- Conversions SÉCURISÉES : on ne les fait que si la vérif passe
     CASE
       WHEN site_verif(m.site_id)
         THEN COALESCE(site_conv(m.site_id) IS NOT NULL, false)
@@ -177,7 +172,7 @@ WITH src AS (
       ELSE false
     END AS ok_desc_conv,
 
-    -- FK : on ne teste la FK que si la clé a passé sa vérif + conv
+
     CASE
       WHEN site_verif(m.site_id)
         THEN EXISTS (
@@ -210,7 +205,6 @@ SELECT
   'Megantic_ELT - ZONE_BASE' AS details,
    ligne_raw AS ligne,
 
-  -- 🆕 attributs fautifs
   concat_ws(
     ', ',
     CASE WHEN NOT ok_site_id
@@ -542,9 +536,6 @@ ON CONFLICT DO NOTHING;
 -- ============================
 --  PARCELLE_BASE : REJETS
 -- ============================
--- ============================
---  PARCELLE_BASE : REJETS
--- ============================
 WITH src AS (
   SELECT
     m.*,
@@ -617,8 +608,6 @@ WHERE NOT (
   AND ok_fk_placette
 );
 
-
-
 -- ================================
 --  PLACETTE_COUVERT_BASE : INSERT
 -- ================================
@@ -678,20 +667,17 @@ WITH src AS (
     m.*,
     to_jsonb(m) AS ligne_raw,
 
-    -- Vérifs brutes
     COALESCE(zone_verif(m.zone), false)             AS ok_zone,
     COALESCE(placette_verif(m.plac), false)         AS ok_placette,
     COALESCE(CouvertType_verif(m.ctype), false)     AS ok_ctype,
     COALESCE(TCat_verif(m.tcat), false)             AS ok_tcat,
     (m.tval BETWEEN 0 AND 100)                      AS ok_tval,
 
-    -- Vérifs de conversion
     COALESCE(zone_conv(m.zone) IS NOT NULL, false)         AS ok_zone_conv,
     COALESCE(placette_conv(m.plac) IS NOT NULL, false)     AS ok_plac_conv,
     COALESCE(CouvertType_conv(m.ctype) IS NOT NULL, false) AS ok_ctype_conv,
     COALESCE(TCat_conv(m.tcat) IS NOT NULL, false)         AS ok_tcat_conv,
 
-    -- FKs
     EXISTS (
       SELECT 1
       FROM Placette p
@@ -1485,7 +1471,6 @@ SELECT
   s.tval::Taux_val
 FROM src s
 WHERE
-  -- Vérifs IMM
       zone_verif(s.zone)
   AND placette_verif(s.plac)
   AND ObstructionNature_verif(s.nature)
@@ -1500,7 +1485,6 @@ WHERE
   AND HauteurObs_conv(s.hauteur)       IS NOT NULL
   AND TCat_conv(s.tcat)                IS NOT NULL
 
-  -- FK Placette
   AND EXISTS (
     SELECT 1
     FROM Placette p
@@ -1508,7 +1492,6 @@ WHERE
       AND p.plac = placette_conv(s.plac)
   )
 
-  -- FK Taux
   AND EXISTS (
     SELECT 1
     FROM Taux t
@@ -1524,7 +1507,7 @@ WITH src AS (
     m.*,
     to_jsonb(m) AS ligne_raw,
 
-    -- Vérifs brutes
+
     COALESCE(zone_verif(m.zone), false)              AS ok_zone,
     COALESCE(placette_verif(m.plac), false)          AS ok_placette,
     COALESCE(ObstructionNature_verif(m.nature), false) AS ok_nature,
@@ -1532,14 +1515,14 @@ WITH src AS (
     COALESCE(TCat_verif(m.tcat), false)              AS ok_tcat,
     (m.tval BETWEEN 0 AND 100)                       AS ok_tval,
 
-    -- Conversions
+
     COALESCE(zone_conv(m.zone) IS NOT NULL, false)                AS ok_zone_conv,
     COALESCE(placette_conv(m.plac) IS NOT NULL, false)            AS ok_plac_conv,
     COALESCE(ObstructionNature_conv(m.nature) IS NOT NULL, false) AS ok_nature_conv,
     COALESCE(HauteurObs_conv(m.hauteur) IS NOT NULL, false)       AS ok_hauteur_conv,
     COALESCE(TCat_conv(m.tcat) IS NOT NULL, false)                AS ok_tcat_conv,
 
-    -- FKs
+
     EXISTS (
       SELECT 1 FROM Placette p
       WHERE p.zone = zone_conv(m.zone)

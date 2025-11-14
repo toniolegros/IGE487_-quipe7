@@ -96,12 +96,17 @@ select
 from A ;
 
 -- Conversion
-create or replace function Date_eco_conv (argument text)
-returns date_eco
-language sql as
+CREATE OR REPLACE FUNCTION Date_eco_conv (argument text)
+RETURNS Date_eco
+LANGUAGE sql AS
 $$
-select to_date(argument, 'yyyy-mm-dd')
+SELECT CASE
+         WHEN Date_eco_verif(argument)
+           THEN to_date(argument, 'yyyy-mm-dd')::Date_eco
+         ELSE NULL::Date_eco
+       END;
 $$;
+
 
 --
 -- == Vérification d'entiers compris entre dans un intervalle [min..max] compris dans [-999999..999999]
@@ -133,12 +138,17 @@ select Entier_verif(argument, -50, 50) ;
 $$;
 
 -- Conversion
-create or replace function Temperature_conv (argument text)
-returns Temperature
-language sql as
+CREATE OR REPLACE FUNCTION Temperature_conv (argument text)
+RETURNS Temperature
+LANGUAGE sql AS
 $$
-select CAST (argument AS Temperature)
+SELECT CASE
+         WHEN Temperature_verif(argument)
+           THEN CAST(argument AS integer)::Temperature
+         ELSE NULL::Temperature
+       END;
 $$;
+
 
 
 
@@ -159,7 +169,11 @@ create or replace function Humidite_conv (argument text)
 returns Humidite
 language sql as
 $$
-select CAST (argument AS Humidite)
+    SELECT CASE
+         WHEN Humidite_verif(argument)
+           THEN CAST(argument AS integer)::humidite
+         ELSE NULL::humidite
+       END;
 $$;
 
 
@@ -180,7 +194,11 @@ create or replace function Vitesse_conv (argument text)
 returns Vitesse
 language sql as
 $$
-select CAST (argument AS Vitesse)
+    SELECT CASE
+         WHEN Vitesse_verif(argument)
+           THEN CAST(argument AS integer)::vitesse
+         ELSE NULL::vitesse
+       END;
 $$;
 
 --
@@ -200,7 +218,11 @@ create or replace function Pression_conv (argument text)
 returns Pression
 language sql as
 $$
-select CAST (argument AS Pression)
+    SELECT CASE
+         WHEN Pression_verif(argument)
+           THEN CAST(argument AS integer)::pression
+         ELSE NULL::pression
+       END;
 $$;
 
 --
@@ -220,7 +242,11 @@ create or replace function HNP_conv (argument text)
 returns HNP
 language sql as
 $$
-select CAST (argument AS HNP)
+    SELECT CASE
+         WHEN HNP_verif(argument)
+           THEN CAST(argument AS integer)::hnp
+         ELSE NULL::hnp
+       END;
 $$;
 
 --
@@ -236,130 +262,388 @@ select argument in (select code from TypePrecipitations)
 $$;
 
 -- Conversion
-create or replace function Code_P_conv (argument text)
-returns Code_P
-language sql as
+CREATE OR REPLACE FUNCTION Code_p_conv(argument text)
+RETURNS Code_P
+LANGUAGE sql AS
 $$
-select CAST (argument AS Code_P)
+SELECT CASE
+         WHEN Code_p_verif(argument)
+           THEN argument::Code_P
+         ELSE NULL::Code_P
+       END;
 $$;
 
 --
 -- == Définition de la procédure d’importation
 --
 
-create or replace procedure Meteo_ELT ()
-language plpgsql as
+CREATE OR REPLACE PROCEDURE Meteo_ELT ()
+LANGUAGE plpgsql AS
 $$
-begin
-
-INSERT INTO "Herbivorie".site (id, site, description)
+BEGIN
+  -------------------------------------------------------------------
+  -- 1) Créer les SITES manquants à partir des zones du CarnetMeteo
+  -------------------------------------------------------------------
+  INSERT INTO "Herbivorie".Site (id, site, description)
   SELECT DISTINCT
          (LEFT(zone_conv(zone), 2) || '00')::Site_id AS id,
          'Site ' || LEFT(zone_conv(zone), 2)         AS site,
          'Site importé automatiquement depuis CarnetMeteo' AS description
   FROM CarnetMeteo
   WHERE zone_verif(zone)
-  ON CONFLICT (id) DO NOTHING;  -- si le site existe déjà, on ignore
+  ON CONFLICT (id) DO NOTHING;
 
   -------------------------------------------------------------------
   -- 2) Créer les ZONES manquantes
   -------------------------------------------------------------------
-  INSERT INTO "Herbivorie".zone (id, zone, description)
+  INSERT INTO "Herbivorie".Zone (id, zone, description)
   SELECT DISTINCT
          (LEFT(zone_conv(zone), 2) || '00')::Site_id AS id,
          zone_conv(zone)                             AS zone,
          'Zone importée automatiquement (ELT)'       AS description
   FROM CarnetMeteo
   WHERE zone_verif(zone)
-  ON CONFLICT (zone) DO NOTHING;  -- si la zone existe déjà, on ignore
+  ON CONFLICT (zone) DO NOTHING;
 
 
+  -------------------------------------------------------------------
+  -- 3) ObsTemperature + Rejets
+  -------------------------------------------------------------------
+  WITH src AS (
+    SELECT
+      c.*,
+      to_jsonb(c) AS ligne_raw,
+      -- Vérifs brutes
+      COALESCE(zone_verif(c.zone), false)              AS ok_zone,
+      COALESCE(date_eco_verif(c.date), false)          AS ok_date,
+      COALESCE(Temperature_verif(c.temp_min), false)   AS ok_temp_min,
+      COALESCE(Temperature_verif(c.temp_max), false)   AS ok_temp_max,
+      -- Conversions non NULL
+      COALESCE(zone_conv(c.zone) IS NOT NULL, false)             AS ok_zone_conv,
+      COALESCE(date_eco_conv(c.date) IS NOT NULL, false)         AS ok_date_conv,
+      COALESCE(Temperature_conv(c.temp_min) IS NOT NULL, false)  AS ok_temp_min_conv,
+      COALESCE(Temperature_conv(c.temp_max) IS NOT NULL, false)  AS ok_temp_max_conv,
+      -- FK sur Zone
+      EXISTS (
+        SELECT 1 FROM "Herbivorie".Zone z
+        WHERE z.zone = zone_conv(c.zone)
+      ) AS ok_fk_zone
+    FROM CarnetMeteo c
+    WHERE c.temp_min IS NOT NULL OR c.temp_max IS NOT NULL
+  )
 
-insert into ObsTemperature (zone,date, temp_min, temp_max, note)
-  select
-    zone_conv(zone) as zone,
-    date_eco_conv(date) as date,
-    Temperature_conv(temp_min) as temp_min,
-    Temperature_conv(temp_max) as temp_max,
-    coalesce (note, '') as note
-  from CarnetMeteo where
-       zone_verif(zone)
-    and date_eco_verif(date)
-    and Temperature_verif(temp_min)
-    and Temperature_verif(temp_max)
-ON CONFLICT (zone, date) DO NOTHING;
+  INSERT INTO "Herbivorie".Rejets (flux, motif, details, ligne, attributs)
+  SELECT
+    'METEO_TEMPERATURE_BASE' AS flux,
+    COALESCE(
+      concat_ws(
+        ', ',
+        CASE WHEN NOT ok_zone          THEN 'Zone invalide' END,
+        CASE WHEN NOT ok_date          THEN 'Date invalide' END,
+        CASE WHEN NOT ok_temp_min      THEN 'Température minimale invalide' END,
+        CASE WHEN NOT ok_temp_max      THEN 'Température maximale invalide' END,
+        CASE WHEN NOT ok_zone_conv     THEN 'Conversion zone NULL' END,
+        CASE WHEN NOT ok_date_conv     THEN 'Conversion date NULL' END,
+        CASE WHEN NOT ok_temp_min_conv THEN 'Conversion temp_min NULL' END,
+        CASE WHEN NOT ok_temp_max_conv THEN 'Conversion temp_max NULL' END,
+        CASE WHEN NOT ok_fk_zone       THEN 'Zone inexistante (FK)' END
+      ),
+      'Rejet sans motif identifié'
+    ) AS motif,
+    'Meteo_ELT - METEO_TEMPERATURE_BASE' AS details,
+    ligne_raw AS ligne,
+    concat_ws(
+      ', ',
+      CASE WHEN NOT ok_zone     THEN format('zone=%s', zone) END,
+      CASE WHEN NOT ok_date     THEN format('date=%s', date) END,
+      CASE WHEN NOT ok_temp_min THEN format('temp_min=%s', temp_min) END,
+      CASE WHEN NOT ok_temp_max THEN format('temp_max=%s', temp_max) END
+    ) AS attributs
+  FROM src
+  WHERE NOT (
+    ok_zone AND ok_date AND ok_temp_min AND ok_temp_max
+    AND ok_zone_conv AND ok_date_conv AND ok_temp_min_conv AND ok_temp_max_conv
+    AND ok_fk_zone
+  );
 
-insert into ObsHumidite (zone,date, hum_min, hum_max)
-  select
-      zone_conv(zone) as zone,
-    date_eco_conv(date) as date,
-    Humidite_conv(hum_min) as hum_min,
-    Humidite_conv(hum_max) as hum_max
-  from CarnetMeteo where
-        zone_verif(zone)
-    and date_eco_verif(date)
-    and Humidite_verif(hum_min)
-    and Humidite_verif(hum_max)
-ON CONFLICT (zone, date) DO NOTHING;
 
--- NOTE Il peut paraitre étrange de permettre l'insertion de précipitations nulles.
---      Nous laisserons à nos amis écologistes le soin de les retirer s'il je juge opportun.
---      On remarque par ailleurs qu'on peut mettre chaque jour une mesure de précipitations
---      pour chacun des types de précipitations
-insert into ObsPrecipitations (zone,date, prec_tot, prec_nat)
-  select
-    zone_conv(zone) as zone,
-    date_eco_conv(date) as date,
-    HNP_conv(prec_tot) as prec_tot,
-    Code_p_conv(prec_nat) as prec_nat
-  from CarnetMeteo where
-        zone_verif(zone)
-    and date_eco_verif(date)
-    and HNP_verif(prec_tot)
-    and Code_p_verif(prec_nat)
-ON CONFLICT (zone, date, prec_nat) DO NOTHING;
+  INSERT INTO "Herbivorie".ObsTemperature (zone, date, temp_min, temp_max, note)
+  SELECT
+    zone_conv(zone)              AS zone,
+    date_eco_conv(date)          AS date,
+    Temperature_conv(temp_min)   AS temp_min,
+    Temperature_conv(temp_max)   AS temp_max,
+    COALESCE(note, '')           AS note
+  from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and Temperature_verif(temp_min) and Temperature_verif(temp_max) ON CONFLICT (zone, date) DO NOTHING;
 
-insert into ObsVents (zone,date, vent_min, vent_max)
-  select
-    zone_conv(zone) as zone,
-    date_eco_conv(date) as date,
-    Vitesse_conv(vent_min) as vent_min,
-    Vitesse_conv(vent_max) as vent_max
-  from CarnetMeteo where
-        zone_verif(zone)
-    and date_eco_verif(date)
-    and Vitesse_verif(vent_min)
-    and Vitesse_verif(vent_max)
-ON CONFLICT (zone, date) DO NOTHING;
 
--- NOTE Qu'aurait-il fallu faire si nous avions mis une contrainte exigeant que
---      pres_min <= pres_max ?
+  -------------------------------------------------------------------
+  -- 4) ObsHumidite + Rejets
+  -------------------------------------------------------------------
+  WITH src AS (
+    SELECT
+      c.*,
+      to_jsonb(c) AS ligne_raw,
+      COALESCE(zone_verif(c.zone), false)           AS ok_zone,
+      COALESCE(date_eco_verif(c.date), false)       AS ok_date,
+      COALESCE(Humidite_verif(c.hum_min), false)    AS ok_hum_min,
+      COALESCE(Humidite_verif(c.hum_max), false)    AS ok_hum_max,
+      COALESCE(zone_conv(c.zone) IS NOT NULL, false)         AS ok_zone_conv,
+      COALESCE(date_eco_conv(c.date) IS NOT NULL, false)     AS ok_date_conv,
+      COALESCE(Humidite_conv(c.hum_min) IS NOT NULL, false)  AS ok_hum_min_conv,
+      COALESCE(Humidite_conv(c.hum_max) IS NOT NULL, false)  AS ok_hum_max_conv,
+      EXISTS (
+        SELECT 1 FROM "Herbivorie".Zone z
+        WHERE z.zone = zone_conv(c.zone)
+      ) AS ok_fk_zone
+    FROM CarnetMeteo c
+    WHERE c.hum_min IS NOT NULL OR c.hum_max IS NOT NULL
+  )
+  INSERT INTO "Herbivorie".Rejets (flux, motif, details, ligne, attributs)
+  SELECT
+    'METEO_HUMIDITE_BASE' AS flux,
+    COALESCE(
+      concat_ws(
+        ', ',
+        CASE WHEN NOT ok_zone        THEN 'Zone invalide' END,
+        CASE WHEN NOT ok_date        THEN 'Date invalide' END,
+        CASE WHEN NOT ok_hum_min     THEN 'Humidité minimale invalide' END,
+        CASE WHEN NOT ok_hum_max     THEN 'Humidité maximale invalide' END,
+        CASE WHEN NOT ok_zone_conv   THEN 'Conversion zone NULL' END,
+        CASE WHEN NOT ok_date_conv   THEN 'Conversion date NULL' END,
+        CASE WHEN NOT ok_hum_min_conv THEN 'Conversion hum_min NULL' END,
+        CASE WHEN NOT ok_hum_max_conv THEN 'Conversion hum_max NULL' END,
+        CASE WHEN NOT ok_fk_zone     THEN 'Zone inexistante (FK)' END
+      ),
+      'Rejet sans motif identifié'
+    ) AS motif,
+    'Meteo_ELT - METEO_HUMIDITE_BASE' AS details,
+    ligne_raw AS ligne,
+    concat_ws(
+      ', ',
+      CASE WHEN NOT ok_zone     THEN format('zone=%s', zone) END,
+      CASE WHEN NOT ok_date     THEN format('date=%s', date) END,
+      CASE WHEN NOT ok_hum_min  THEN format('hum_min=%s', hum_min) END,
+      CASE WHEN NOT ok_hum_max  THEN format('hum_max=%s', hum_max) END
+    ) AS attributs
+  FROM src
+  WHERE NOT (
+    ok_zone AND ok_date AND ok_hum_min AND ok_hum_max
+    AND ok_zone_conv AND ok_date_conv AND ok_hum_min_conv AND ok_hum_max_conv
+    AND ok_fk_zone
+  );
 
-insert into ObsPression (zone,date, pres_min, pres_max)
-  with T as (
-    select
-      zone_conv(zone) as zone,
-      date_eco_conv(date) as date,
-      Pression_conv(pres_min) as pres_min,
-      Pression_conv(pres_max) as pres_max
-    from CarnetMeteo where
-          zone_verif(zone)
-      and date_eco_verif(date)
-      and Pression_verif(pres_min)
-      and Pression_verif(pres_max)
-    )
-  select * from T where pres_min <= pres_max
-ON CONFLICT (zone, date) DO NOTHING;
+  INSERT INTO "Herbivorie".ObsHumidite (zone, date, hum_min, hum_max)
+  SELECT
+    zone_conv(zone)             AS zone,
+    date_eco_conv(date)         AS date,
+    Humidite_conv(hum_min)      AS hum_min,
+    Humidite_conv(hum_max)      AS hum_max
+  from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and Humidite_verif(hum_min) and Humidite_verif(hum_max) ON CONFLICT (zone, date) DO NOTHING;
 
--- NOTE Il serait possible de corriger toutes nos tables pour inclure la contrainte min_max
---      sur le modèle suivant :
---
---      alter table ObsPression add
---        constraint ObsPression_min_max check (pres_min <= pres_max) ;
---
---      et ensuite notre procédure Meteo_ELT à l'avenant :-)
 
-end;
+  -------------------------------------------------------------------
+  -- 5) ObsPrecipitations + Rejets
+  -------------------------------------------------------------------
+  WITH src AS (
+    SELECT
+      c.*,
+      to_jsonb(c) AS ligne_raw,
+      COALESCE(zone_verif(c.zone), false)        AS ok_zone,
+      COALESCE(date_eco_verif(c.date), false)    AS ok_date,
+      COALESCE(HNP_verif(c.prec_tot), false)     AS ok_prec_tot,
+      COALESCE(Code_p_verif(c.prec_nat), false)  AS ok_prec_nat,
+      COALESCE(zone_conv(c.zone) IS NOT NULL, false)    AS ok_zone_conv,
+      COALESCE(date_eco_conv(c.date) IS NOT NULL, false) AS ok_date_conv,
+      COALESCE(HNP_conv(c.prec_tot) IS NOT NULL, false) AS ok_prec_tot_conv,
+      COALESCE(Code_p_conv(c.prec_nat) IS NOT NULL, false) AS ok_prec_nat_conv,
+      EXISTS (
+        SELECT 1 FROM "Herbivorie".Zone z
+        WHERE z.zone = zone_conv(c.zone)
+      ) AS ok_fk_zone
+    FROM CarnetMeteo c
+    WHERE c.prec_tot IS NOT NULL OR c.prec_nat IS NOT NULL
+  )
+  INSERT INTO "Herbivorie".Rejets (flux, motif, details, ligne, attributs)
+  SELECT
+    'METEO_PRECIPITATIONS_BASE' AS flux,
+    COALESCE(
+      concat_ws(
+        ', ',
+        CASE WHEN NOT ok_zone          THEN 'Zone invalide' END,
+        CASE WHEN NOT ok_date          THEN 'Date invalide' END,
+        CASE WHEN NOT ok_prec_tot      THEN 'Précipitations totales invalides' END,
+        CASE WHEN NOT ok_prec_nat      THEN 'Nature de précipitations invalide' END,
+        CASE WHEN NOT ok_zone_conv     THEN 'Conversion zone NULL' END,
+        CASE WHEN NOT ok_date_conv     THEN 'Conversion date NULL' END,
+        CASE WHEN NOT ok_prec_tot_conv THEN 'Conversion prec_tot NULL' END,
+        CASE WHEN NOT ok_prec_nat_conv THEN 'Conversion prec_nat NULL' END,
+        CASE WHEN NOT ok_fk_zone       THEN 'Zone inexistante (FK)' END
+      ),
+      'Rejet sans motif identifié'
+    ) AS motif,
+    'Meteo_ELT - METEO_PRECIPITATIONS_BASE' AS details,
+    ligne_raw AS ligne,
+    concat_ws(
+      ', ',
+      CASE WHEN NOT ok_zone      THEN format('zone=%s', zone) END,
+      CASE WHEN NOT ok_date      THEN format('date=%s', date) END,
+      CASE WHEN NOT ok_prec_tot  THEN format('prec_tot=%s', prec_tot) END,
+      CASE WHEN NOT ok_prec_nat  THEN format('prec_nat=%s', prec_nat) END
+    ) AS attributs
+  FROM src
+  WHERE NOT (
+    ok_zone AND ok_date AND ok_prec_tot AND ok_prec_nat
+    AND ok_zone_conv AND ok_date_conv AND ok_prec_tot_conv AND ok_prec_nat_conv
+    AND ok_fk_zone
+  );
+
+  INSERT INTO "Herbivorie".ObsPrecipitations (zone, date, prec_tot, prec_nat)
+  SELECT
+    zone_conv(zone)           AS zone,
+    date_eco_conv(date)       AS date,
+    HNP_conv(prec_tot)        AS prec_tot,
+    Code_p_conv(prec_nat)     AS prec_nat
+from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and HNP_verif(prec_tot) and Code_p_verif(prec_nat) ON CONFLICT (zone, date, prec_nat) DO NOTHING;
+
+
+  -------------------------------------------------------------------
+  -- 6) ObsVents + Rejets
+  -------------------------------------------------------------------
+  WITH src AS (
+    SELECT
+      c.*,
+      to_jsonb(c) AS ligne_raw,
+      COALESCE(zone_verif(c.zone), false)          AS ok_zone,
+      COALESCE(date_eco_verif(c.date), false)      AS ok_date,
+      COALESCE(Vitesse_verif(c.vent_min), false)   AS ok_vent_min,
+      COALESCE(Vitesse_verif(c.vent_max), false)   AS ok_vent_max,
+      COALESCE(zone_conv(c.zone) IS NOT NULL, false)      AS ok_zone_conv,
+      COALESCE(date_eco_conv(c.date) IS NOT NULL, false)  AS ok_date_conv,
+      COALESCE(Vitesse_conv(c.vent_min) IS NOT NULL, false) AS ok_vent_min_conv,
+      COALESCE(Vitesse_conv(c.vent_max) IS NOT NULL, false) AS ok_vent_max_conv,
+      EXISTS (
+        SELECT 1 FROM "Herbivorie".Zone z
+        WHERE z.zone = zone_conv(c.zone)
+      ) AS ok_fk_zone
+    FROM CarnetMeteo c
+    WHERE c.vent_min IS NOT NULL OR c.vent_max IS NOT NULL
+  )
+  INSERT INTO "Herbivorie".Rejets (flux, motif, details, ligne, attributs)
+  SELECT
+    'METEO_VENTS_BASE' AS flux,
+    COALESCE(
+      concat_ws(
+        ', ',
+        CASE WHEN NOT ok_zone         THEN 'Zone invalide' END,
+        CASE WHEN NOT ok_date         THEN 'Date invalide' END,
+        CASE WHEN NOT ok_vent_min     THEN 'Vent minimal invalide' END,
+        CASE WHEN NOT ok_vent_max     THEN 'Vent maximal invalide' END,
+        CASE WHEN NOT ok_zone_conv    THEN 'Conversion zone NULL' END,
+        CASE WHEN NOT ok_date_conv    THEN 'Conversion date NULL' END,
+        CASE WHEN NOT ok_vent_min_conv THEN 'Conversion vent_min NULL' END,
+        CASE WHEN NOT ok_vent_max_conv THEN 'Conversion vent_max NULL' END,
+        CASE WHEN NOT ok_fk_zone      THEN 'Zone inexistante (FK)' END
+      ),
+      'Rejet sans motif identifié'
+    ) AS motif,
+    'Meteo_ELT - METEO_VENTS_BASE' AS details,
+    ligne_raw AS ligne,
+    concat_ws(
+      ', ',
+      CASE WHEN NOT ok_zone     THEN format('zone=%s', zone) END,
+      CASE WHEN NOT ok_date     THEN format('date=%s', date) END,
+      CASE WHEN NOT ok_vent_min THEN format('vent_min=%s', vent_min) END,
+      CASE WHEN NOT ok_vent_max THEN format('vent_max=%s', vent_max) END
+    ) AS attributs
+  FROM src
+  WHERE NOT (
+    ok_zone AND ok_date AND ok_vent_min AND ok_vent_max
+    AND ok_zone_conv AND ok_date_conv AND ok_vent_min_conv AND ok_vent_max_conv
+    AND ok_fk_zone
+  );
+
+  INSERT INTO "Herbivorie".ObsVents (zone, date, vent_min, vent_max)
+  SELECT
+    zone_conv(zone)         AS zone,
+    date_eco_conv(date)     AS date,
+    Vitesse_conv(vent_min)  AS vent_min,
+    Vitesse_conv(vent_max)  AS vent_max
+  from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and Vitesse_verif(vent_min) and Vitesse_verif(vent_max) ON CONFLICT (zone, date) DO NOTHING;
+
+
+  -------------------------------------------------------------------
+  -- 7) ObsPression + Rejets
+  -------------------------------------------------------------------
+  WITH src AS (
+    SELECT
+      c.*,
+      to_jsonb(c) AS ligne_raw,
+      COALESCE(zone_verif(c.zone), false)          AS ok_zone,
+      COALESCE(date_eco_verif(c.date), false)      AS ok_date,
+      COALESCE(Pression_verif(c.pres_min), false)  AS ok_pres_min,
+      COALESCE(Pression_verif(c.pres_max), false)  AS ok_pres_max,
+      COALESCE(zone_conv(c.zone) IS NOT NULL, false)          AS ok_zone_conv,
+      COALESCE(date_eco_conv(c.date) IS NOT NULL, false)      AS ok_date_conv,
+      COALESCE(Pression_conv(c.pres_min) IS NOT NULL, false)  AS ok_pres_min_conv,
+      COALESCE(Pression_conv(c.pres_max) IS NOT NULL, false)  AS ok_pres_max_conv,
+      EXISTS (
+        SELECT 1 FROM "Herbivorie".Zone z
+        WHERE z.zone = zone_conv(c.zone)
+      ) AS ok_fk_zone,
+      (Pression_conv(c.pres_min) <= Pression_conv(c.pres_max)) AS ok_intervalle
+    FROM CarnetMeteo c
+    WHERE c.pres_min IS NOT NULL OR c.pres_max IS NOT NULL
+  )
+  INSERT INTO "Herbivorie".Rejets (flux, motif, details, ligne, attributs)
+  SELECT
+    'METEO_PRESSION_BASE' AS flux,
+    COALESCE(
+      concat_ws(
+        ', ',
+        CASE WHEN NOT ok_zone          THEN 'Zone invalide' END,
+        CASE WHEN NOT ok_date          THEN 'Date invalide' END,
+        CASE WHEN NOT ok_pres_min      THEN 'Pression min invalide' END,
+        CASE WHEN NOT ok_pres_max      THEN 'Pression max invalide' END,
+        CASE WHEN NOT ok_zone_conv     THEN 'Conversion zone NULL' END,
+        CASE WHEN NOT ok_date_conv     THEN 'Conversion date NULL' END,
+        CASE WHEN NOT ok_pres_min_conv THEN 'Conversion pres_min NULL' END,
+        CASE WHEN NOT ok_pres_max_conv THEN 'Conversion pres_max NULL' END,
+        CASE WHEN NOT ok_intervalle    THEN 'pres_min > pres_max' END,
+        CASE WHEN NOT ok_fk_zone       THEN 'Zone inexistante (FK)' END
+      ),
+      'Rejet sans motif identifié'
+    ) AS motif,
+    'Meteo_ELT - METEO_PRESSION_BASE' AS details,
+    ligne_raw AS ligne,
+    concat_ws(
+      ', ',
+      CASE WHEN NOT ok_zone     THEN format('zone=%s', zone) END,
+      CASE WHEN NOT ok_date     THEN format('date=%s', date) END,
+      CASE WHEN NOT ok_pres_min THEN format('pres_min=%s', pres_min) END,
+      CASE WHEN NOT ok_pres_max THEN format('pres_max=%s', pres_max) END
+    ) AS attributs
+  FROM src
+  WHERE NOT (
+    ok_zone AND ok_date AND ok_pres_min AND ok_pres_max
+    AND ok_zone_conv AND ok_date_conv AND ok_pres_min_conv AND ok_pres_max_conv
+    AND ok_intervalle
+    AND ok_fk_zone
+  );
+
+  INSERT INTO "Herbivorie".ObsPression (zone, date, pres_min, pres_max)
+  with T as ( select
+    zone_conv(zone)          AS zone,
+    date_eco_conv(date)      AS date,
+    Pression_conv(pres_min)  AS pres_min,
+    Pression_conv(pres_max)  AS pres_max
+  from CarnetMeteo
+  where zone_verif(zone) and date_eco_verif(date) and Pression_verif(pres_min) and Pression_verif(pres_max))
+   select * from T
+   where pres_min <= pres_max
+   ON CONFLICT (zone, date) DO NOTHING;
+
+END;
 $$;
 
 /*
@@ -390,6 +674,6 @@ $$;
   [CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0)]
 
 -- -----------------------------------------------------------------------------
--- fin de {CoFELI}/Exemple/Herbivorie/src/Meteo_elt.sql
+-- fin de {CoFELI}/Exemple/Herbivorie/Carnetmeteo/Meteo_elt.sql
 -- =========================================================================== Z
 */

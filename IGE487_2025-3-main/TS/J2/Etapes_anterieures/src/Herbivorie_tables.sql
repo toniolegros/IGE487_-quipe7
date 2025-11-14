@@ -1,18 +1,6 @@
 DROP TABLE IF EXISTS megantic CASCADE;
 SET SCHEMA 'Herbivorie';
 
-/*CREATE TABLE Megantic1 (
-    id  text,
-    placette text,
-    longueur text,
-    largeur text,
-    fleur Text,
-    sous_parcelle text,
-    date text,
-    JJ text,
-    etat text,
-    note text
-);*/
 
 CREATE TABLE megantic (
   site_id           TEXT,
@@ -100,12 +88,12 @@ INSERT INTO megantic values ('MM01','Site Mégantic 1','Zone d’étude principa
 
 CREATE TABLE IF NOT EXISTS Rejets (
     rejet_id   BIGSERIAL PRIMARY KEY,
-    flux       TEXT NOT NULL,                          -- Nom du flux : PLANT, OBS_ETAT, etc.
-    motif      TEXT NOT NULL,                          -- Message d’erreur lisible
-    details    TEXT,                                   -- Contexte (ex : Megantic_ELT - PLANT)
+    flux       TEXT NOT NULL,
+    motif      TEXT NOT NULL,
+    details    TEXT,
     attributs  text,
-    ligne      JSONB NOT NULL,                         -- Ligne brute rejetée
-    date_rejet TIMESTAMP NOT NULL DEFAULT now()        -- Timestamp du rejet
+    ligne      JSONB NOT NULL,
+    date_rejet TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE OR REPLACE VIEW Rejets_Synthese AS
