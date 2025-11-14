@@ -10,6 +10,7 @@ SET SCHEMA 'Herbivorie' ;
 
 CREATE VIEW VueConditionsMeteo AS
 SELECT
+    z.zone,
     t.date,
     t.temp_min,
     t.temp_max,
@@ -20,10 +21,11 @@ SELECT
     v.vent_max,
     p.pres_min,
     p.pres_max
-FROM ObsTemperature t
-JOIN ObsHumidite h  ON t.date = h.date
-JOIN ObsVents v     ON t.date = v.date
-JOIN ObsPression p  ON t.date = p.date;
+FROM Zone z
+JOIN ObsTemperature t ON (z.zone = t.zone)
+JOIN ObsHumidite h  ON (t.date = h.date and z.zone = h.zone)
+JOIN ObsVents v     ON (t.date = v.date and z.zone = v.zone)
+JOIN ObsPression p  ON (t.date = p.date and z.zone = p.zone);
 
 -- Retirer les données météorologiques pour une période donnée (date de début, date de fin) si la température
 --  minimale rapportée est en deçà d’une température donnée.
@@ -130,25 +132,3 @@ BEFORE INSERT OR UPDATE ON Taux
 FOR EACH ROW
 EXECUTE FUNCTION Verif_Taux();
 
--- Nouvelle table ObsFloraison
-
-CREATE TABLE ObsFloraison_new (
-  id    Plant_id   NOT NULL,
-  date  Date_eco   NOT NULL,
-  note  Description NOT NULL,
-  CONSTRAINT ObsFloraison_new_pk PRIMARY KEY (id),
-  CONSTRAINT ObsFloraison_new_fk FOREIGN KEY (id) REFERENCES Plant (id)
-);
-
-INSERT INTO ObsFloraison_new (id, date, note)
-SELECT DISTINCT ON (id) id, date, note
-FROM ObsFloraison
-WHERE fleur = true
-ORDER BY id, date ASC;
-
--- Remplacement de l'ancienne table
-
-DROP TABLE ObsFloraison;
-
-ALTER TABLE ObsFloraison_new
-RENAME TO ObsFloraison;

@@ -140,6 +140,8 @@ $$
 select CAST (argument AS Temperature)
 $$;
 
+
+
 --
 -- == Vérification et conversion de valeurs de type Humidite
 --
@@ -159,6 +161,7 @@ language sql as
 $$
 select CAST (argument AS Humidite)
 $$;
+
 
 --
 -- == Vérification et conversion de valeurs de type Vitesse
@@ -249,66 +252,104 @@ language plpgsql as
 $$
 begin
 
-insert into ObsTemperature (date, temp_min, temp_max, note)
+INSERT INTO "Herbivorie".site (id, site, description)
+  SELECT DISTINCT
+         (LEFT(zone_conv(zone), 2) || '00')::Site_id AS id,
+         'Site ' || LEFT(zone_conv(zone), 2)         AS site,
+         'Site importé automatiquement depuis CarnetMeteo' AS description
+  FROM CarnetMeteo
+  WHERE zone_verif(zone)
+  ON CONFLICT (id) DO NOTHING;  -- si le site existe déjà, on ignore
+
+  -------------------------------------------------------------------
+  -- 2) Créer les ZONES manquantes
+  -------------------------------------------------------------------
+  INSERT INTO "Herbivorie".zone (id, zone, description)
+  SELECT DISTINCT
+         (LEFT(zone_conv(zone), 2) || '00')::Site_id AS id,
+         zone_conv(zone)                             AS zone,
+         'Zone importée automatiquement (ELT)'       AS description
+  FROM CarnetMeteo
+  WHERE zone_verif(zone)
+  ON CONFLICT (zone) DO NOTHING;  -- si la zone existe déjà, on ignore
+
+
+
+insert into ObsTemperature (zone,date, temp_min, temp_max, note)
   select
+    zone_conv(zone) as zone,
     date_eco_conv(date) as date,
     Temperature_conv(temp_min) as temp_min,
     Temperature_conv(temp_max) as temp_max,
     coalesce (note, '') as note
   from CarnetMeteo where
-    date_eco_verif(date)
+       zone_verif(zone)
+    and date_eco_verif(date)
     and Temperature_verif(temp_min)
-    and Temperature_verif(temp_max) ;
+    and Temperature_verif(temp_max)
+ON CONFLICT (zone, date) DO NOTHING;
 
-insert into ObsHumidite (date, hum_min, hum_max)
+insert into ObsHumidite (zone,date, hum_min, hum_max)
   select
+      zone_conv(zone) as zone,
     date_eco_conv(date) as date,
     Humidite_conv(hum_min) as hum_min,
     Humidite_conv(hum_max) as hum_max
   from CarnetMeteo where
-    date_eco_verif(date)
+        zone_verif(zone)
+    and date_eco_verif(date)
     and Humidite_verif(hum_min)
-    and Humidite_verif(hum_max) ;
+    and Humidite_verif(hum_max)
+ON CONFLICT (zone, date) DO NOTHING;
 
 -- NOTE Il peut paraitre étrange de permettre l'insertion de précipitations nulles.
 --      Nous laisserons à nos amis écologistes le soin de les retirer s'il je juge opportun.
 --      On remarque par ailleurs qu'on peut mettre chaque jour une mesure de précipitations
 --      pour chacun des types de précipitations
-insert into ObsPrecipitations (date, prec_tot, prec_nat)
+insert into ObsPrecipitations (zone,date, prec_tot, prec_nat)
   select
+    zone_conv(zone) as zone,
     date_eco_conv(date) as date,
     HNP_conv(prec_tot) as prec_tot,
     Code_p_conv(prec_nat) as prec_nat
   from CarnetMeteo where
-    date_eco_verif(date)
+        zone_verif(zone)
+    and date_eco_verif(date)
     and HNP_verif(prec_tot)
-    and Code_p_verif(prec_nat) ;
+    and Code_p_verif(prec_nat)
+ON CONFLICT (zone, date, prec_nat) DO NOTHING;
 
-insert into ObsVents (date, vent_min, vent_max)
+insert into ObsVents (zone,date, vent_min, vent_max)
   select
+    zone_conv(zone) as zone,
     date_eco_conv(date) as date,
     Vitesse_conv(vent_min) as vent_min,
     Vitesse_conv(vent_max) as vent_max
   from CarnetMeteo where
-    date_eco_verif(date)
+        zone_verif(zone)
+    and date_eco_verif(date)
     and Vitesse_verif(vent_min)
-    and Vitesse_verif(vent_max) ;
+    and Vitesse_verif(vent_max)
+ON CONFLICT (zone, date) DO NOTHING;
 
 -- NOTE Qu'aurait-il fallu faire si nous avions mis une contrainte exigeant que
 --      pres_min <= pres_max ?
 
-insert into ObsPression (date, pres_min, pres_max)
+insert into ObsPression (zone,date, pres_min, pres_max)
   with T as (
     select
+      zone_conv(zone) as zone,
       date_eco_conv(date) as date,
       Pression_conv(pres_min) as pres_min,
       Pression_conv(pres_max) as pres_max
     from CarnetMeteo where
-      date_eco_verif(date)
+          zone_verif(zone)
+      and date_eco_verif(date)
       and Pression_verif(pres_min)
       and Pression_verif(pres_max)
     )
-  select * from T where pres_min <= pres_max;
+  select * from T where pres_min <= pres_max
+ON CONFLICT (zone, date) DO NOTHING;
 
 -- NOTE Il serait possible de corriger toutes nos tables pour inclure la contrainte min_max
 --      sur le modèle suivant :

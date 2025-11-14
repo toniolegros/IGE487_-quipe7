@@ -1,113 +1,224 @@
--- Jeu de données enrichi pour tester les tables Placette et Taux
--- Ajout de cas limites et scénarios variés
+SET SCHEMA 'Herbivorie';
 
--- Insertion de données dans la table Taux
-INSERT INTO Taux (tCat, tMin, tMax) VALUES
-  ('A', 0, 20),
-  ('B', 21, 40),
-  ('C', 41, 60),
-  ('D', 61, 80),
-  ('E', 81, 100),
-  ('F', 101, 120), -- Cas limite hors intervalle [0..100]
-  ('G', 50, 70);   -- Chevauchement avec l'existant
 
--- Insertion de données dans la table Placette
-INSERT INTO Placette (plac, peup, obs_F1, obs_F2, obs_C1, obs_C2, obs_T1, obs_T2, graminees, mousses, fougeres, arb_P1, arb_P2, arb_P3, date) VALUES
-  ('P1', 'PEUP1', 'A', 'B', 'C', 'D', 'E', 'E', 'A', 'B', 'C', 1, 2, 3, '2025-10-01'),
-  ('P2', 'PEUP2', 'B', 'C', 'D', 'E', 'A', 'B', 'C', 'D', 'E', 2, 3, 4, '2025-10-02'),
-  ('P3', 'PEUP3', 'C', 'D', 'E', 'A', 'B', 'C', 'D', 'E', 'A', 3, 4, 5, '2025-10-03'),
-  ('P4', 'PEUP4', 'D', 'E', 'A', 'B', 'C', 'D', 'E', 'A', 'B', 4, 5, 6, '2025-10-04'),
-  ('P5', 'PEUP5', 'E', 'A', 'B', 'C', 'D', 'E', 'A', 'B', 'C', 5, 6, 7, '2025-10-05'),
-  ('P6', 'PEUP6', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'A', 'B', 6, 7, 8, '2025-10-06'),
-  ('P7', 'PEUP7', 'B', 'C', 'D', 'E', 'A', 'B', 'C', 'D', 'E', 7, 8, 9, '2025-10-07');
+CREATE TABLE JeuTests_Complet (
+  -- Blocs pour SITE
+  site_id           TEXT,
+  site_nom          TEXT,
+  site_description  TEXT,
 
--- Ajout de données aléatoires pour tester les contraintes
-DO $$
-DECLARE
-  i INTEGER;
-BEGIN
-  FOR i IN 1..100000 LOOP
-    INSERT INTO Placette (plac, peup, obs_F1, obs_F2, obs_C1, obs_C2, obs_T1, obs_T2, graminees, mousses, fougeres, arb_P1, arb_P2, arb_P3, date) VALUES
-      ('P' || i, 'PEUP' || i, 'A' || MOD(i, 5), 'B' || MOD(i, 5), 'C' || MOD(i, 5), 'D' || MOD(i, 5), 'E' || MOD(i, 5), 'F' || MOD(i, 5), 'G' || MOD(i, 5), 'H' || MOD(i, 5), 'I' || MOD(i, 5), MOD(i, 10), MOD(i, 10) + 1, MOD(i, 10) + 2, CURRENT_DATE);
-  END LOOP;
-END $$;
+  -- Blocs pour ZONE
+  zone_code         TEXT,
+  zone_site_id      TEXT,
+  zone_description  TEXT,
 
--- Complément du jeu de données pour tester toutes les fonctions et tables
+  -- Blocs pour PEUPLEMENT
+  peup_code         TEXT,
+  peup_description  TEXT,
 
--- Insertion de données dans la table ObsFloraison
-INSERT INTO ObsFloraison (id, fleur, date, note) VALUES
-  ('PLANT1', true, '2025-10-01', 'Floraison observée'),
-  ('PLANT2', false, '2025-10-02', 'Pas de floraison'),
-  ('PLANT3', true, '2025-10-03', 'Floraison observée'),
-  ('PLANT4', false, '2025-10-04', 'Pas de floraison'),
-  ('PLANT5', true, '2025-10-05', 'Floraison observée');
+  -- Blocs pour ARBRE
+  arbre_code        TEXT,
+  arbre_description TEXT,
 
--- Insertion de données dans la table ObsDimension
-INSERT INTO ObsDimension (id, longueur, largeur, date, note) VALUES
-  ('PLANT1', 150, 50, '2025-10-01', 'Dimensions normales'),
-  ('PLANT2', 200, 70, '2025-10-02', 'Dimensions grandes'),
-  ('PLANT3', 120, 40, '2025-10-03', 'Dimensions petites'),
-  ('PLANT4', 180, 60, '2025-10-04', 'Dimensions normales'),
-  ('PLANT5', 160, 55, '2025-10-05', 'Dimensions normales');
+  -- Blocs pour TAUX (référentiel)
+  taux_cat          TEXT,
+  taux_min          TEXT,
+  taux_max          TEXT,
 
--- Insertion de données dans la table ObsEtat
-INSERT INTO ObsEtat (id, etat, date, note) VALUES
-  ('PLANT1', 'A', '2025-10-01', 'État sain'),
-  ('PLANT2', 'B', '2025-10-02', 'État moyen'),
-  ('PLANT3', 'C', '2025-10-03', 'État faible'),
-  ('PLANT4', 'A', '2025-10-04', 'État sain'),
-  ('PLANT5', 'B', '2025-10-05', 'État moyen');
+  -- Blocs pour TAUX_VALEUR
+  tauxv_cat         TEXT,
+  tauxv_val         TEXT,
 
--- Insertion de données dans la table ObsTemperature
-INSERT INTO ObsTemperature (date, temp_min, temp_max, note) VALUES
-  ('2025-10-01', -5, 10, 'Températures basses'),
-  ('2025-10-02', 0, 15, 'Températures normales'),
-  ('2025-10-03', 5, 20, 'Températures élevées'),
-  ('2025-10-04', -10, 5, 'Températures très basses'),
-  ('2025-10-05', 10, 25, 'Températures très élevées');
+  -- Blocs pour UNITE
+  unite_id          TEXT,
+  unite_code        TEXT,
+  unite_description TEXT,
 
--- Insertion de données dans la table ObsHumidite
-INSERT INTO ObsHumidite (date, hum_min, hum_max) VALUES
-  ('2025-10-01', 30, 50),
-  ('2025-10-02', 40, 60),
-  ('2025-10-03', 50, 70),
-  ('2025-10-04', 20, 40),
-  ('2025-10-05', 60, 80);
+  -- Blocs pour PLACETTE
+  plac_code         TEXT,
 
--- Insertion de données dans la table ObsVents
-INSERT INTO ObsVents (date, vent_min, vent_max) VALUES
-  ('2025-10-01', 10, 20),
-  ('2025-10-02', 15, 25),
-  ('2025-10-03', 20, 30),
-  ('2025-10-04', 5, 15),
-  ('2025-10-05', 25, 35);
+  -- Blocs pour PLACETTE_CORE
+  placcore_plac     TEXT,
+  placcore_peup     TEXT,
+  placcore_date     TEXT,
 
--- Insertion de données dans la table ObsPression
-INSERT INTO ObsPression (date, pres_min, pres_max) VALUES
-  ('2025-10-01', 950, 1000),
-  ('2025-10-02', 960, 1010),
-  ('2025-10-03', 970, 1020),
-  ('2025-10-04', 940, 990),
-  ('2025-10-05', 980, 1030);
+  -- Blocs pour PLACETTE_DOMINANT
+  placdom_plac      TEXT,
+  placdom_rang      TEXT,
+  placdom_arbre     TEXT,
 
--- Insertion de données dans la table ObsPrecipitations
-INSERT INTO ObsPrecipitations (date, prec_tot, prec_nat) VALUES
-  ('2025-10-01', 10, 'P'),
-  ('2025-10-02', 20, 'N'),
-  ('2025-10-03', 30, 'G'),
-  ('2025-10-04', 5, 'P'),
-  ('2025-10-05', 15, 'N');
+  -- Blocs pour PLACETTE_OBSTRUCTION
+  placobs_plac      TEXT,
+  placobs_nature    TEXT,
+  placobs_hauteur   TEXT,
+  placobs_tcat      TEXT,
 
--- Ajout de données spécifiques dans CarnetMeteo pour valider la procédure Meteo_ELT
+  -- Blocs pour PLACETTE_COUVERT
+  placcouv_plac     TEXT,
+  placcouv_ctype    TEXT,
+  placcouv_tcat     TEXT,
 
--- Insertion de données brutes dans CarnetMeteo
-INSERT INTO CarnetMeteo (temp_min, temp_max, hum_min, hum_max, prec_tot, prec_nat, vent_min, vent_max, pres_min, pres_max, date, note) VALUES
-  (-5, 10, 30, 50, 10, 'P', 10, 20, 950, 1000, '2025-10-01', 'Conditions normales'),
-  (0, 15, 40, 60, 20, 'N', 15, 25, 960, 1010, '2025-10-02', 'Conditions humides'),
-  (5, 20, 50, 70, 30, 'G', 20, 30, 970, 1020, '2025-10-03', 'Conditions venteuses'),
-  (-10, 5, 20, 40, 5, 'P', 5, 15, 940, 990, '2025-10-04', 'Conditions froides'),
-  (10, 25, 60, 80, 15, 'N', 25, 35, 980, 1030, '2025-10-05', 'Conditions chaudes'),
-  (null, null, null, null, null, null, null, null, null, null, '2025-10-06', 'Données manquantes'),
-  (-50, 50, 0, 100, 500, 'G', 300, 300, 1100, 1100, '2025-10-07', 'Cas extrêmes');
+  -- Blocs pour PARCELLE1
+  parc_plac         TEXT,
+  parc_num          TEXT,
 
--- Fin du jeu de données
+  -- Blocs pour PLANT
+  plant_id          TEXT,
+  plant_plac        TEXT,
+  plant_date        TEXT,
+  plant_note        TEXT,
+
+  -- Blocs pour OBSDIMENSION
+  obsdim_id         TEXT,
+  obsdim_long       TEXT,
+  obsdim_larg       TEXT,
+  obsdim_date       TEXT,
+  obsdim_note       TEXT,
+
+  -- Blocs pour OBSFLORAISON
+  obsfl_id          TEXT,
+  obsfl_fleur       TEXT,
+  obsfl_date        TEXT,
+  obsfl_note        TEXT,
+
+  -- Blocs pour ETAT
+  etat_code         TEXT,
+  etat_description  TEXT,
+
+  -- Blocs pour OBSETAT
+  obsetat_id        TEXT,
+  obsetat_etat      TEXT,
+  obsetat_date      TEXT,
+  obsetat_note      TEXT,
+
+  -- Blocs pour PLANT1
+  plant1_id         TEXT,
+  plant1_plac       TEXT
+);
+
+INSERT INTO JeuTests_Complet (
+  site_id, site_nom, site_description,
+  zone_code, zone_site_id, zone_description,
+  peup_code, peup_description,
+  arbre_code, arbre_description,
+  taux_cat, taux_min, taux_max,
+  tauxv_cat, tauxv_val,
+  unite_id, unite_code, unite_description,
+  plac_code,
+  placcore_plac, placcore_peup, placcore_date,
+  placdom_plac, placdom_rang, placdom_arbre,
+  placobs_plac, placobs_nature, placobs_hauteur, placobs_tcat,
+  placcouv_plac, placcouv_ctype, placcouv_tcat,
+  parc_plac, parc_num,
+  plant_id, plant_plac, plant_date, plant_note,
+  obsdim_id, obsdim_long, obsdim_larg, obsdim_date, obsdim_note,
+  obsfl_id, obsfl_fleur, obsfl_date, obsfl_note,
+  etat_code, etat_description,
+  obsetat_id, obsetat_etat, obsetat_date, obsetat_note,
+  plant1_id, plant1_plac
+)
+VALUES
+-- 1) Cas 100 % valide pour quasiment tout
+('SA01','Site A','Site principal',
+ 'MMA','SA01','Zone A du site A',
+ 'P0001','Peuplement feuillu dense',
+ 'AB12','Érable à sucre',
+ 'A','0','10',
+ 'A','5',
+ '1','mm','Millimetre',
+ 'A1',
+ 'A1','P0001','2020-05-12',
+ 'A1','1','AB12',
+ 'A1','feuillu','1m','A',
+ 'A1','graminees','A',
+ 'A1','1',
+ 'MMA0001','A1','2020-05-12','Plant sain',
+ 'MMA0001','20','15','2020-05-12','dimension OK',
+ 'MMA0001','1','2020-05-12','fleur OK',
+ 'A','Plant sain',
+ 'MMA0001','A','2020-05-12','etat OK',
+ 'MMA0001','A1'),
+
+-- 2) Id plant invalide, etat invalide, longueur invalide
+('SA02','Site B','Autre site',
+ 'MMB','SA02','Zone B',
+ 'P0002','Peuplement coniférien',
+ 'CD34','Sapin baumier',
+ 'B','11','30',
+ 'B','25',
+ '2','°C','Degré Celsius',
+ 'B2',
+ 'B2','P0002','2021-06-01',
+ 'B2','2','CD34',
+ 'B2','coniferien','2m','B',
+ 'B2','fougeres','B',
+ 'B2','2',
+ 'XXX001','B2','2021-06-01','ID plant invalide',
+ 'XXX001','NA','10','2021-06-01','longueur NA',
+ 'XXX001','true','2021-06-01','fleur OK format',
+ 'AA','Code etat trop long',
+ 'XXX001','AA','2021-06-01','etat invalide',
+ 'XXX001','B2'),
+
+-- 3) Placette invalide, parcelle invalide, date invalide
+('SA03','Site C','Site test',
+ 'MMC','SA03','Zone C',
+ 'P0003','Peuplement mixte',
+ 'EF56','Pin gris',
+ 'C','31','60',
+ 'C','40',
+ '3','%','Pourcentage',
+ '11A',        -- plac_code invalide (pour tester placette_verif)
+ '11A','P0003','2020-13-01',   -- date invalide
+ '11A','1','EF56',
+ '11A','feuillu','1m','C',
+ '11A','mousses','C',
+ '11A','X',    -- parcelle invalide
+ 'MMB0001','11A','2020-13-01','Placette et date invalides',
+ 'MMB0001','25','20','2020-13-01','dimension avec date invalide',
+ 'MMB0001','1','2020-13-01','fleur OK mais date KO',
+ 'B','Etat ok B',
+ 'MMB0001','B','2020-13-01','etat ok mais date KO',
+ 'MMB0001','11A'),
+
+-- 4) Fleur invalide, largeur non numérique, etat vide
+('SA04','Site D','Site test 2',
+ 'MMD','SA04','Zone D',
+ 'P0004','Peuplement test',
+ 'GH78','Chêne rouge',
+ 'D','0','100',
+ 'D','90',
+ '4','cm','Centimètre',
+ 'C3',
+ 'C3','P0004','2022-03-10',
+ 'C3','1','GH78',
+ 'C3','total','2m','D',
+ 'C3','graminees','D',
+ 'C3','3',
+ 'MMB0002','C3','2022-03-10','note vide test',
+ 'MMB0002','15','xx','2022-03-10','largeur non numérique',
+ 'MMB0002','maybe','2022-03-10','fleur invalide',
+ 'C','Etat C ok',
+ 'MMB0002','', '2022-03-10','etat vide',
+ 'MMB0002','C3'),
+
+-- 5) Parcelle hors intervalle, longueur = 0, note trop longue
+('SA05','Site E','Site test 3',
+ 'MME','SA05','Zone E',
+ 'P0005','Peuplement test 5',
+ 'IJ90','Bouleau jaune',
+ 'E','0','50',
+ 'E','5',
+ '5','m','Mètre',
+ 'E1',
+ 'E1','P0005','2023-01-01',
+ 'E1','1','IJ90',
+ 'E1','feuillu','1m','E',
+ 'E1','fougeres','E',
+ 'E1','150',      -- parcelle > 99
+ 'MMC0001','E1','2023-01-01',RPAD('x',410,'x'), -- note > 400
+ 'MMC0001','0','10','2023-01-01','longueur 0',
+ 'MMC0001','1','2023-01-01','fleur ok',
+ 'Z','Etat limite Z',
+ 'MMC0001','Z','2023-01-01','etat ok',
+ 'MMC0001','E1');
