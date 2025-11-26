@@ -2,7 +2,7 @@ SET SCHEMA 'Herbivorie' ;
 
 
 CREATE INDEX idx_plant_placette
-    ON Plant(placette);
+    ON Plant(plac);
 
 CREATE INDEX idx_plant_date
     ON Plant(date);

@@ -289,7 +289,7 @@ BEGIN
          (LEFT(zone_conv(zone), 2) || '00')::Site_id AS id,
          'Site ' || LEFT(zone_conv(zone), 2)         AS site,
          'Site importé automatiquement depuis CarnetMeteo' AS description
-  FROM CarnetMeteo
+  FROM "Staging".CarnetMeteo
   WHERE zone_verif(zone)
   ON CONFLICT (id) DO NOTHING;
 
@@ -301,7 +301,7 @@ BEGIN
          (LEFT(zone_conv(zone), 2) || '00')::Site_id AS id,
          zone_conv(zone)                             AS zone,
          'Zone importée automatiquement (ELT)'       AS description
-  FROM CarnetMeteo
+  FROM "Staging".CarnetMeteo
   WHERE zone_verif(zone)
   ON CONFLICT (zone) DO NOTHING;
 
@@ -328,7 +328,7 @@ BEGIN
         SELECT 1 FROM "Herbivorie".Zone z
         WHERE z.zone = zone_conv(c.zone)
       ) AS ok_fk_zone
-    FROM CarnetMeteo c
+    FROM "Staging".CarnetMeteo c
     WHERE c.temp_min IS NOT NULL OR c.temp_max IS NOT NULL
   )
 
@@ -374,7 +374,7 @@ BEGIN
     Temperature_conv(temp_min)   AS temp_min,
     Temperature_conv(temp_max)   AS temp_max,
     COALESCE(note, '')           AS note
-  from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and Temperature_verif(temp_min) and Temperature_verif(temp_max) ON CONFLICT (zone, date) DO NOTHING;
+  from "Staging".CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and Temperature_verif(temp_min) and Temperature_verif(temp_max) ON CONFLICT (zone, date) DO NOTHING;
 
 
   -------------------------------------------------------------------
@@ -396,7 +396,7 @@ BEGIN
         SELECT 1 FROM "Herbivorie".Zone z
         WHERE z.zone = zone_conv(c.zone)
       ) AS ok_fk_zone
-    FROM CarnetMeteo c
+    FROM "Staging".CarnetMeteo c
     WHERE c.hum_min IS NOT NULL OR c.hum_max IS NOT NULL
   )
   INSERT INTO "Herbivorie".Rejets (flux, motif, details, ligne, attributs)
@@ -439,7 +439,7 @@ BEGIN
     date_eco_conv(date)         AS date,
     Humidite_conv(hum_min)      AS hum_min,
     Humidite_conv(hum_max)      AS hum_max
-  from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and Humidite_verif(hum_min) and Humidite_verif(hum_max) ON CONFLICT (zone, date) DO NOTHING;
+  from "Staging".CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and Humidite_verif(hum_min) and Humidite_verif(hum_max) ON CONFLICT (zone, date) DO NOTHING;
 
 
   -------------------------------------------------------------------
@@ -461,7 +461,7 @@ BEGIN
         SELECT 1 FROM "Herbivorie".Zone z
         WHERE z.zone = zone_conv(c.zone)
       ) AS ok_fk_zone
-    FROM CarnetMeteo c
+    FROM "Staging".CarnetMeteo c
     WHERE c.prec_tot IS NOT NULL OR c.prec_nat IS NOT NULL
   )
   INSERT INTO "Herbivorie".Rejets (flux, motif, details, ligne, attributs)
@@ -504,7 +504,7 @@ BEGIN
     date_eco_conv(date)       AS date,
     HNP_conv(prec_tot)        AS prec_tot,
     Code_p_conv(prec_nat)     AS prec_nat
-from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and HNP_verif(prec_tot) and Code_p_verif(prec_nat) ON CONFLICT (zone, date, prec_nat) DO NOTHING;
+from "Staging".CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and HNP_verif(prec_tot) and Code_p_verif(prec_nat) ON CONFLICT (zone, date, prec_nat) DO NOTHING;
 
 
   -------------------------------------------------------------------
@@ -526,7 +526,7 @@ from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and HNP_verif(p
         SELECT 1 FROM "Herbivorie".Zone z
         WHERE z.zone = zone_conv(c.zone)
       ) AS ok_fk_zone
-    FROM CarnetMeteo c
+    FROM "Staging".CarnetMeteo c
     WHERE c.vent_min IS NOT NULL OR c.vent_max IS NOT NULL
   )
   INSERT INTO "Herbivorie".Rejets (flux, motif, details, ligne, attributs)
@@ -569,7 +569,7 @@ from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and HNP_verif(p
     date_eco_conv(date)     AS date,
     Vitesse_conv(vent_min)  AS vent_min,
     Vitesse_conv(vent_max)  AS vent_max
-  from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and Vitesse_verif(vent_min) and Vitesse_verif(vent_max) ON CONFLICT (zone, date) DO NOTHING;
+  from "Staging".CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and Vitesse_verif(vent_min) and Vitesse_verif(vent_max) ON CONFLICT (zone, date) DO NOTHING;
 
 
   -------------------------------------------------------------------
@@ -592,7 +592,7 @@ from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and HNP_verif(p
         WHERE z.zone = zone_conv(c.zone)
       ) AS ok_fk_zone,
       (Pression_conv(c.pres_min) <= Pression_conv(c.pres_max)) AS ok_intervalle
-    FROM CarnetMeteo c
+    FROM "Staging".CarnetMeteo c
     WHERE c.pres_min IS NOT NULL OR c.pres_max IS NOT NULL
   )
   INSERT INTO "Herbivorie".Rejets (flux, motif, details, ligne, attributs)
@@ -637,7 +637,7 @@ from CarnetMeteo where zone_verif(zone) and date_eco_verif(date) and HNP_verif(p
     date_eco_conv(date)      AS date,
     Pression_conv(pres_min)  AS pres_min,
     Pression_conv(pres_max)  AS pres_max
-  from CarnetMeteo
+  from "Staging".CarnetMeteo
   where zone_verif(zone) and date_eco_verif(date) and Pression_verif(pres_min) and Pression_verif(pres_max))
    select * from T
    where pres_min <= pres_max

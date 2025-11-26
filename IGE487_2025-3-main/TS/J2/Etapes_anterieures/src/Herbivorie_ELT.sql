@@ -16,7 +16,7 @@ WITH src AS (
     site_id,
     site_nom,
     description_site
-  FROM megantic
+  FROM "Staging".megantic
   WHERE site_id IS NOT NULL
 )
 INSERT INTO Site (id, site, description)
@@ -64,7 +64,7 @@ WITH src AS (
       ELSE false
     END AS ok_desc_conv
 
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.site_id IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
@@ -120,7 +120,7 @@ WITH src AS (
     site_id,
     zone,
     description_zone
-  FROM megantic
+  FROM "Staging".megantic
   WHERE zone IS NOT NULL
 )
 INSERT INTO Zone (id, zone, description)
@@ -183,7 +183,7 @@ WITH src AS (
       ELSE false
     END AS ok_fk_site
 
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.zone IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
@@ -244,7 +244,7 @@ WITH src AS (
   SELECT DISTINCT
     zone,
     plac
-  FROM megantic
+  FROM "Staging".megantic
 )
 INSERT INTO Placette (zone, plac)
 SELECT
@@ -274,7 +274,7 @@ WITH src AS (
     COALESCE(placette_verif(m.plac), false)     AS ok_placette,
     COALESCE(zone_conv(m.zone) IS NOT NULL, false)     AS ok_zone_conv,
     COALESCE(placette_conv(m.plac) IS NOT NULL, false) AS ok_plac_conv
-  FROM megantic m
+  FROM "Staging".megantic m
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
 SELECT
@@ -317,7 +317,7 @@ WITH src AS (
   SELECT DISTINCT
     peup,
     description_peup
-  FROM megantic
+  FROM "Staging".megantic
   WHERE peup IS NOT NULL
 )
 INSERT INTO Peuplement (peup, description)
@@ -343,7 +343,7 @@ WITH src AS (
     COALESCE(description_verif(m.description_peup), false) AS ok_desc,
     COALESCE(peuplement_conv(m.peup) IS NOT NULL, false)        AS ok_peup_conv,
     COALESCE(description_conv(m.description_peup) IS NOT NULL, false) AS ok_desc_conv
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.peup IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
@@ -388,7 +388,7 @@ WITH src AS (
     plac,
     peup,
     date
-  FROM megantic
+  FROM "Staging".megantic
 )
 INSERT INTO Placette_core (zone, plac, peup, date)
 SELECT
@@ -443,7 +443,7 @@ WITH src AS (
       SELECT 1 FROM Peuplement pe
       WHERE pe.peup = peuplement_conv(m.peup)
     ) AS ok_fk_peup
-  FROM megantic m
+  FROM "Staging".megantic m
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
 SELECT
@@ -510,7 +510,7 @@ WITH src AS (
     zone,
     plac,
     parcelle
-  FROM megantic
+  FROM "Staging".megantic
   WHERE parcelle IS NOT NULL
 )
 INSERT INTO parcelle (zone, plac, parcelle)
@@ -552,7 +552,7 @@ WITH src AS (
       WHERE p.zone = zone_conv(m.zone)
         AND p.plac = placette_conv(m.plac)
     ) AS ok_fk_placette
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.parcelle IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
@@ -618,8 +618,17 @@ WITH src AS (
     ctype,
     tcat,
     tval
-  FROM megantic
+  FROM "Staging".megantic
   WHERE ctype IS NOT NULL
+),
+src2 AS (
+  SELECT
+    s.*,
+    t.tMin AS tmin,
+    t.tMax AS tmax
+  FROM src s
+  LEFT JOIN Taux t
+    ON t.tCat::text = s.tcat
 )
 INSERT INTO Placette_Couvert (zone, plac, ctype, tcat, tval)
 SELECT
@@ -628,36 +637,32 @@ SELECT
   CouvertType_conv(s.ctype),
   TCat_conv(s.tcat),
   s.tval::Taux_val
-FROM src s
+FROM src2 s
 WHERE
-  -- Vérifs IMM
   zone_verif(s.zone)
   AND placette_verif(s.plac)
   AND CouvertType_verif(s.ctype)
   AND TCat_verif(s.tcat)
-  AND s.tval BETWEEN 0 AND 100
-
-  -- Vérifs de conversion : on refuse les NULL
+  AND s.tval BETWEEN 0 AND 100     -- borne générale DVCT
+  AND s.tmin IS NOT NULL           -- borne venant de TAUX
+  AND s.tmax IS NOT NULL
+  AND s.tval BETWEEN s.tmin AND s.tmax    -- borne TAUX
   AND zone_conv(s.zone)         IS NOT NULL
   AND placette_conv(s.plac)     IS NOT NULL
   AND CouvertType_conv(s.ctype) IS NOT NULL
   AND TCat_conv(s.tcat)         IS NOT NULL
-
-  -- FK : placette existante
   AND EXISTS (
-    SELECT 1
-    FROM Placette p
-    WHERE p.zone = zone_conv(s.zone)
-      AND p.plac = placette_conv(s.plac)
+      SELECT 1 FROM Placette p
+      WHERE p.zone = zone_conv(s.zone)
+        AND p.plac = placette_conv(s.plac)
   )
-
-  -- FK : taux existant
   AND EXISTS (
-    SELECT 1
-    FROM Taux t
-    WHERE t.tCat = TCat_conv(s.tcat)
+      SELECT 1 FROM Taux t
+      WHERE t.tCat = TCat_conv(s.tcat)
   )
 ON CONFLICT DO NOTHING;
+
+
 
 -- ==================================
 --  PLACETTE_COUVERT_BASE : REJETS
@@ -666,12 +671,19 @@ WITH src AS (
   SELECT
     m.*,
     to_jsonb(m) AS ligne_raw,
+    t.tMin AS tmin,
+    t.tMax AS tmax,
 
-    COALESCE(zone_verif(m.zone), false)             AS ok_zone,
-    COALESCE(placette_verif(m.plac), false)         AS ok_placette,
-    COALESCE(CouvertType_verif(m.ctype), false)     AS ok_ctype,
-    COALESCE(TCat_verif(m.tcat), false)             AS ok_tcat,
-    (m.tval BETWEEN 0 AND 100)                      AS ok_tval,
+    COALESCE(zone_verif(m.zone), false)         AS ok_zone,
+    COALESCE(placette_verif(m.plac), false)     AS ok_placette,
+    COALESCE(CouvertType_verif(m.ctype), false) AS ok_ctype,
+    COALESCE(TCat_verif(m.tcat), false)         AS ok_tcat,
+    (m.tval BETWEEN 0 AND 100)                  AS ok_tval,
+
+    ( t.tMin IS NOT NULL
+      AND t.tMax IS NOT NULL
+      AND m.tval BETWEEN t.tMin AND t.tMax
+    )                                           AS ok_tval_bounds,
 
     COALESCE(zone_conv(m.zone) IS NOT NULL, false)         AS ok_zone_conv,
     COALESCE(placette_conv(m.plac) IS NOT NULL, false)     AS ok_plac_conv,
@@ -679,70 +691,56 @@ WITH src AS (
     COALESCE(TCat_conv(m.tcat) IS NOT NULL, false)         AS ok_tcat_conv,
 
     EXISTS (
-      SELECT 1
-      FROM Placette p
+      SELECT 1 FROM Placette p
       WHERE p.zone = zone_conv(m.zone)
         AND p.plac = placette_conv(m.plac)
     ) AS ok_fk_placette,
+
     EXISTS (
-      SELECT 1
-      FROM Taux t
-      WHERE t.tCat = TCat_conv(m.tcat)
+      SELECT 1 FROM Taux t2
+      WHERE t2.tCat = TCat_conv(m.tcat)
     ) AS ok_fk_taux
 
-  FROM megantic m
+  FROM "Staging".megantic m
+  LEFT JOIN Taux t ON t.tCat::text = m.tcat
   WHERE m.ctype IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
 SELECT
-  'PLACETTE_COUVERT_BASE' AS flux,
+  'PLACETTE_COUVERT_BASE',
   COALESCE(
     concat_ws(
       ', ',
-      CASE WHEN NOT ok_zone        THEN 'Zone invalide' END,
-      CASE WHEN NOT ok_placette    THEN 'Placette invalide' END,
-      CASE WHEN NOT ok_ctype       THEN 'Type de couvert invalide' END,
-      CASE WHEN NOT ok_tcat        THEN 'Catégorie de taux invalide' END,
-      CASE WHEN NOT ok_tval        THEN 'Valeur de taux hors [0..100]' END,
-      CASE WHEN NOT ok_zone_conv   THEN 'Conversion zone NULL' END,
-      CASE WHEN NOT ok_plac_conv   THEN 'Conversion placette NULL' END,
-      CASE WHEN NOT ok_ctype_conv  THEN 'Conversion type de couvert NULL' END,
-      CASE WHEN NOT ok_tcat_conv   THEN 'Conversion catégorie de taux NULL' END,
-      CASE WHEN NOT ok_fk_placette THEN 'Placette inexistante (FK)' END,
-      CASE WHEN NOT ok_fk_taux     THEN 'Taux inexistant (FK)' END
+      CASE WHEN NOT ok_zone         THEN 'Zone invalide' END,
+      CASE WHEN NOT ok_placette     THEN 'Placette invalide' END,
+      CASE WHEN NOT ok_ctype        THEN 'Type de couvert invalide' END,
+      CASE WHEN NOT ok_tcat         THEN 'Catégorie de taux invalide' END,
+      CASE WHEN NOT ok_tval         THEN 'Valeur tVal hors [0..100]' END,
+      CASE WHEN NOT ok_tval_bounds  THEN format('tVal hors intervalle [%s-%s]', tmin, tmax) END,
+      CASE WHEN NOT ok_zone_conv    THEN 'Conversion zone NULL' END,
+      CASE WHEN NOT ok_plac_conv    THEN 'Conversion placette NULL' END,
+      CASE WHEN NOT ok_ctype_conv   THEN 'Conversion type couv. NULL' END,
+      CASE WHEN NOT ok_tcat_conv    THEN 'Conversion tCat NULL' END,
+      CASE WHEN NOT ok_fk_placette  THEN 'Placette inexistante (FK)' END,
+      CASE WHEN NOT ok_fk_taux      THEN 'Taux inexistant (FK)' END
     ),
     'Rejet sans motif identifié'
   ) AS motif,
-  'Megantic_ELT - PLACETTE_COUVERT_BASE' AS details,
-  ligne_raw AS ligne,
+  'Megantic_ELT - PLACETTE_COUVERT_BASE',
+  ligne_raw,
   concat_ws(
     ', ',
-    CASE WHEN NOT ok_zone
-      THEN format('zone=%s', zone) END,
-    CASE WHEN NOT ok_placette
-      THEN format('plac=%s', plac) END,
-    CASE WHEN NOT ok_ctype
-      THEN format('ctype=%s', ctype) END,
-    CASE WHEN NOT ok_tcat
-      THEN format('tcat=%s', tcat) END,
-    CASE WHEN NOT ok_tval
-      THEN format('tval=%s', tval) END,
-    CASE WHEN NOT ok_zone_conv
-      THEN format('zone(conv)=%s', zone) END,
-    CASE WHEN NOT ok_plac_conv
-      THEN format('plac(conv)=%s', plac) END,
-    CASE WHEN NOT ok_ctype_conv
-      THEN format('ctype(conv)=%s', ctype) END,
-    CASE WHEN NOT ok_tcat_conv
-      THEN format('tcat(conv)=%s', tcat) END,
-    CASE WHEN NOT ok_fk_placette
-      THEN format('fk_placette(zone,plac)=%s,%s', zone, plac) END,
-    CASE WHEN NOT ok_fk_taux
-      THEN format('fk_taux=%s', tcat) END
+    format('zone=%s', zone),
+    format('plac=%s', plac),
+    format('ctype=%s', ctype),
+    format('tcat=%s', tcat),
+    format('tval=%s', tval),
+    CASE WHEN tmin IS NOT NULL THEN format('tmin=%s', tmin) END,
+    CASE WHEN tmax IS NOT NULL THEN format('tmax=%s', tmax) END
   ) AS attributs
 FROM src
 WHERE NOT (
-  ok_zone AND ok_placette AND ok_ctype AND ok_tcat AND ok_tval
+  ok_zone AND ok_placette AND ok_ctype AND ok_tcat AND ok_tval AND ok_tval_bounds
   AND ok_zone_conv AND ok_plac_conv AND ok_ctype_conv AND ok_tcat_conv
   AND ok_fk_placette AND ok_fk_taux
 );
@@ -761,7 +759,7 @@ WITH src AS (
     id,
     date,
     note
-  FROM megantic
+  FROM "Staging".megantic
   WHERE id IS NOT NULL
 )
 INSERT INTO Plant (zone, id, plac, date, note)
@@ -812,7 +810,7 @@ WITH src AS (
       WHERE p.zone = zone_conv(m.zone)
         AND p.plac = placette_conv(m.plac)
     ) AS ok_fk_placette
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.id IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
@@ -886,7 +884,7 @@ WITH src AS (
     date,
     unite_id,
     note
-  FROM megantic
+  FROM "Staging".megantic
   WHERE id IS NOT NULL
     AND longueur IS NOT NULL
     AND largeur IS NOT NULL
@@ -912,7 +910,7 @@ WHERE
   AND (s.note IS NULL OR description_verif(s.note))
   AND plant_conv(s.id) IS NOT NULL
   AND dateeco_conv(s.date) IS NOT NULL
-  AND EXISTS (SELECT 1 FROM Plant p WHERE p.id = plant_conv(s.id))
+  AND plant_conv(s.id) IN (SELECT id FROM Plant)
   AND EXISTS (SELECT 1 FROM UNITE u WHERE u.unite_id = s.unite_id)
 ON CONFLICT DO NOTHING;
 
@@ -933,7 +931,7 @@ WITH src AS (
     (m.note IS NULL OR description_conv(m.note) IS NOT NULL) AS ok_note_conv,
     EXISTS (SELECT 1 FROM Plant p WHERE p.id = plant_conv(m.id)) AS ok_fk_plant,
     EXISTS (SELECT 1 FROM UNITE u WHERE u.unite_id = m.unite_id) AS ok_fk_unite
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.id IS NOT NULL
     AND m.longueur IS NOT NULL
     AND m.largeur IS NOT NULL
@@ -1002,7 +1000,7 @@ WITH src AS (
     fleur,
     date,
     note
-  FROM megantic
+  FROM "Staging".megantic
   WHERE id IS NOT NULL
 )
 INSERT INTO ObsFloraison (id, fleur, date, note)
@@ -1039,7 +1037,7 @@ WITH src AS (
     COALESCE(description_conv(m.note) IS NOT NULL, false) AS ok_note_conv,
     COALESCE(m.fleur IS NOT NULL, false) AS ok_fleur,
     EXISTS (SELECT 1 FROM Plant p WHERE p.id = plant_conv(m.id)) AS ok_fk_plant
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.id IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
@@ -1099,7 +1097,7 @@ WITH src AS (
   SELECT DISTINCT
     etat,
     description_etat
-  FROM megantic
+  FROM "Staging".megantic
   WHERE etat IS NOT NULL
 )
 INSERT INTO Etat (etat, description)
@@ -1122,7 +1120,7 @@ WITH src AS (
     COALESCE(description_verif(m.description_etat), false) AS ok_desc,
     COALESCE(etat_conv(m.etat) IS NOT NULL, false)            AS ok_etat_conv,
     COALESCE(description_conv(m.description_etat) IS NOT NULL, false) AS ok_desc_conv
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.etat IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
@@ -1169,7 +1167,7 @@ WITH src AS (
     etat,
     date,
     note
-  FROM megantic
+  FROM "Staging".megantic
   WHERE id IS NOT NULL
     AND etat IS NOT NULL
 )
@@ -1210,7 +1208,7 @@ WITH src AS (
     COALESCE(description_conv(m.note) IS NOT NULL, false) AS ok_note_conv,
     EXISTS (SELECT 1 FROM Plant p WHERE p.id = plant_conv(m.id)) AS ok_fk_plant,
     EXISTS (SELECT 1 FROM Etat  e WHERE e.etat = etat_conv(m.etat)) AS ok_fk_etat
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.id IS NOT NULL
     AND m.etat IS NOT NULL
 )
@@ -1272,7 +1270,7 @@ WITH src AS (
   SELECT DISTINCT
     arbre,
     description_arbre
-  FROM megantic
+  FROM "Staging".megantic
   WHERE arbre IS NOT NULL
 )
 INSERT INTO Arbre (arbre, description)
@@ -1298,7 +1296,7 @@ WITH src AS (
     COALESCE(description_verif(m.description_arbre), false) AS ok_desc,
     COALESCE(arbre_conv(m.arbre) IS NOT NULL, false)          AS ok_arbre_conv,
     COALESCE(description_conv(m.description_arbre) IS NOT NULL, false) AS ok_desc_conv
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.arbre IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
@@ -1343,7 +1341,7 @@ WITH src AS (
     plac,
     rang,
     arbre
-  FROM megantic
+  FROM "Staging".megantic
   WHERE rang IS NOT NULL
 )
 INSERT INTO Placette_Dominant (zone, plac, rang, arbre)
@@ -1395,7 +1393,7 @@ WITH src AS (
       SELECT 1 FROM Arbre a
       WHERE a.arbre = arbre_conv(m.arbre)
     ) AS ok_fk_arbre
-  FROM megantic m
+  FROM "Staging".megantic m
   WHERE m.rang IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
@@ -1446,9 +1444,9 @@ WHERE NOT (
   AND ok_fk_placette AND ok_fk_arbre
 );
 
--- ==================================
+-- ===================================
 --  PLACETTE_OBSTRUCTION_BASE : INSERT
--- ==================================
+-- ===================================
 WITH src AS (
   SELECT DISTINCT
     zone,
@@ -1457,9 +1455,18 @@ WITH src AS (
     hauteur,
     tcat,
     tval
-  FROM megantic
+  FROM "Staging".megantic
   WHERE nature IS NOT NULL
     AND hauteur IS NOT NULL
+),
+src2 AS (
+  SELECT
+    s.*,
+    t.tMin AS tmin,
+    t.tMax AS tmax
+  FROM src s
+  LEFT JOIN Taux t
+    ON t.tCat::text = s.tcat
 )
 INSERT INTO Placette_Obstruction (zone, plac, nature, hauteur, tcat, tval)
 SELECT
@@ -1469,52 +1476,55 @@ SELECT
   HauteurObs_conv(s.hauteur),
   TCat_conv(s.tcat),
   s.tval::Taux_val
-FROM src s
+FROM src2 s
 WHERE
-      zone_verif(s.zone)
+  zone_verif(s.zone)
   AND placette_verif(s.plac)
   AND ObstructionNature_verif(s.nature)
   AND HauteurObs_verif(s.hauteur)
   AND TCat_verif(s.tcat)
   AND s.tval BETWEEN 0 AND 100
-
-  -- Conversions non NULL
-  AND zone_conv(s.zone)                IS NOT NULL
-  AND placette_conv(s.plac)            IS NOT NULL
+  AND s.tmin IS NOT NULL
+  AND s.tmax IS NOT NULL
+  AND s.tval BETWEEN s.tmin AND s.tmax
+  AND zone_conv(s.zone) IS NOT NULL
+  AND placette_conv(s.plac) IS NOT NULL
   AND ObstructionNature_conv(s.nature) IS NOT NULL
-  AND HauteurObs_conv(s.hauteur)       IS NOT NULL
-  AND TCat_conv(s.tcat)                IS NOT NULL
-
+  AND HauteurObs_conv(s.hauteur) IS NOT NULL
+  AND TCat_conv(s.tcat) IS NOT NULL
   AND EXISTS (
-    SELECT 1
-    FROM Placette p
-    WHERE p.zone = zone_conv(s.zone)
-      AND p.plac = placette_conv(s.plac)
+      SELECT 1 FROM Placette p
+      WHERE p.zone = zone_conv(s.zone)
+        AND p.plac = placette_conv(s.plac)
   )
-
   AND EXISTS (
-    SELECT 1
-    FROM Taux t
-    WHERE t.tCat = TCat_conv(s.tcat)
+      SELECT 1 FROM Taux t2
+      WHERE t2.tCat = TCat_conv(s.tcat)
   )
 ON CONFLICT (zone, plac, nature, hauteur) DO NOTHING;
 
--- ====================================
+
+-- =====================================
 --  PLACETTE_OBSTRUCTION_BASE : REJETS
--- ====================================
+-- =====================================
 WITH src AS (
   SELECT
     m.*,
     to_jsonb(m) AS ligne_raw,
+    t.tMin AS tmin,
+    t.tMax AS tmax,
 
-
-    COALESCE(zone_verif(m.zone), false)              AS ok_zone,
-    COALESCE(placette_verif(m.plac), false)          AS ok_placette,
+    COALESCE(zone_verif(m.zone), false)                AS ok_zone,
+    COALESCE(placette_verif(m.plac), false)            AS ok_placette,
     COALESCE(ObstructionNature_verif(m.nature), false) AS ok_nature,
-    COALESCE(HauteurObs_verif(m.hauteur), false)     AS ok_hauteur,
-    COALESCE(TCat_verif(m.tcat), false)              AS ok_tcat,
-    (m.tval BETWEEN 0 AND 100)                       AS ok_tval,
+    COALESCE(HauteurObs_verif(m.hauteur), false)       AS ok_hauteur,
+    COALESCE(TCat_verif(m.tcat), false)                AS ok_tcat,
+    (m.tval BETWEEN 0 AND 100)                         AS ok_tval,
 
+    ( t.tMin IS NOT NULL
+      AND t.tMax IS NOT NULL
+      AND m.tval BETWEEN t.tMin AND t.tMax
+    )                                                  AS ok_tval_bounds,
 
     COALESCE(zone_conv(m.zone) IS NOT NULL, false)                AS ok_zone_conv,
     COALESCE(placette_conv(m.plac) IS NOT NULL, false)            AS ok_plac_conv,
@@ -1522,78 +1532,61 @@ WITH src AS (
     COALESCE(HauteurObs_conv(m.hauteur) IS NOT NULL, false)       AS ok_hauteur_conv,
     COALESCE(TCat_conv(m.tcat) IS NOT NULL, false)                AS ok_tcat_conv,
 
-
     EXISTS (
       SELECT 1 FROM Placette p
       WHERE p.zone = zone_conv(m.zone)
         AND p.plac = placette_conv(m.plac)
     ) AS ok_fk_placette,
     EXISTS (
-      SELECT 1 FROM Taux t
-      WHERE t.tCat = TCat_conv(m.tcat)
+      SELECT 1 FROM Taux t2
+      WHERE t2.tCat = TCat_conv(m.tcat)
     ) AS ok_fk_taux
 
-  FROM megantic m
+  FROM "Staging".megantic m
+  LEFT JOIN Taux t ON t.tCat::text = m.tcat
   WHERE m.nature IS NOT NULL
     AND m.hauteur IS NOT NULL
 )
 INSERT INTO Rejets (flux, motif, details, ligne, attributs)
 SELECT
-  'PLACETTE_OBSTRUCTION_BASE' AS flux,
+  'PLACETTE_OBSTRUCTION_BASE',
   COALESCE(
     concat_ws(
       ', ',
       CASE WHEN NOT ok_zone         THEN 'Zone invalide' END,
       CASE WHEN NOT ok_placette     THEN 'Placette invalide' END,
-      CASE WHEN NOT ok_nature       THEN 'Nature d''obstruction invalide' END,
-      CASE WHEN NOT ok_hauteur      THEN 'Hauteur d''observation invalide' END,
-      CASE WHEN NOT ok_tcat         THEN 'Catégorie de taux invalide' END,
-      CASE WHEN NOT ok_tval         THEN 'Valeur de taux hors [0..100]' END,
+      CASE WHEN NOT ok_nature       THEN 'Nature invalide' END,
+      CASE WHEN NOT ok_hauteur      THEN 'Hauteur invalide' END,
+      CASE WHEN NOT ok_tcat         THEN 'Catégorie taux invalide' END,
+      CASE WHEN NOT ok_tval         THEN 'tVal hors [0..100]' END,
+      CASE WHEN NOT ok_tval_bounds  THEN format('tVal hors intervalle [%s-%s]', tmin, tmax) END,
       CASE WHEN NOT ok_zone_conv    THEN 'Conversion zone NULL' END,
       CASE WHEN NOT ok_plac_conv    THEN 'Conversion placette NULL' END,
       CASE WHEN NOT ok_nature_conv  THEN 'Conversion nature NULL' END,
       CASE WHEN NOT ok_hauteur_conv THEN 'Conversion hauteur NULL' END,
-      CASE WHEN NOT ok_tcat_conv    THEN 'Conversion catégorie de taux NULL' END,
+      CASE WHEN NOT ok_tcat_conv    THEN 'Conversion tCat NULL' END,
       CASE WHEN NOT ok_fk_placette  THEN 'Placette inexistante (FK)' END,
       CASE WHEN NOT ok_fk_taux      THEN 'Taux inexistant (FK)' END
     ),
     'Rejet sans motif identifié'
-  ) AS motif,
-  'Megantic_ELT - PLACETTE_OBSTRUCTION_BASE' AS details,
-  ligne_raw AS ligne,
+  ),
+  'Megantic_ELT - PLACETTE_OBSTRUCTION_BASE',
+  ligne_raw,
   concat_ws(
     ', ',
-    CASE WHEN NOT ok_zone
-      THEN format('zone=%s', zone) END,
-    CASE WHEN NOT ok_placette
-      THEN format('plac=%s', plac) END,
-    CASE WHEN NOT ok_nature
-      THEN format('nature=%s', nature) END,
-    CASE WHEN NOT ok_hauteur
-      THEN format('hauteur=%s', hauteur) END,
-    CASE WHEN NOT ok_tcat
-      THEN format('tcat=%s', tcat) END,
-    CASE WHEN NOT ok_tval
-      THEN format('tval=%s', tval) END,
-    CASE WHEN NOT ok_zone_conv
-      THEN format('zone(conv)=%s', zone) END,
-    CASE WHEN NOT ok_plac_conv
-      THEN format('plac(conv)=%s', plac) END,
-    CASE WHEN NOT ok_nature_conv
-      THEN format('nature(conv)=%s', nature) END,
-    CASE WHEN NOT ok_hauteur_conv
-      THEN format('hauteur(conv)=%s', hauteur) END,
-    CASE WHEN NOT ok_tcat_conv
-      THEN format('tcat(conv)=%s', tcat) END,
-    CASE WHEN NOT ok_fk_placette
-      THEN format('fk_placette(zone,plac)=%s,%s', zone, plac) END,
-    CASE WHEN NOT ok_fk_taux
-      THEN format('fk_taux=%s', tcat) END
+    format('zone=%s', zone),
+    format('plac=%s', plac),
+    format('nature=%s', nature),
+    format('hauteur=%s', hauteur),
+    format('tcat=%s', tcat),
+    format('tval=%s', tval),
+    CASE WHEN tmin IS NOT NULL THEN format('tmin=%s', tmin) END,
+    CASE WHEN tmax IS NOT NULL THEN format('tmax=%s', tmax) END
   ) AS attributs
 FROM src
 WHERE NOT (
   ok_zone AND ok_placette AND ok_nature AND ok_hauteur
-  AND ok_tcat AND ok_tval
+  AND ok_tcat AND ok_tval AND ok_tval_bounds
   AND ok_zone_conv AND ok_plac_conv AND ok_nature_conv AND ok_hauteur_conv AND ok_tcat_conv
   AND ok_fk_placette AND ok_fk_taux
 );

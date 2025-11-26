@@ -328,7 +328,7 @@ RETURNS TABLE (
 )
 BEGIN ATOMIC
     SELECT *
-    FROM CarnetMeteo;
+    FROM "Staging".CarnetMeteo;
 END;
 
 -- CarnetMeteo : Insertion
@@ -348,7 +348,7 @@ CREATE OR REPLACE PROCEDURE "Herbivorie".carnetmeteo_INS(
     _note     TEXT
 )
 BEGIN ATOMIC
-    INSERT INTO CarnetMeteo (
+    INSERT INTO "Staging".CarnetMeteo (
         zone, temp_min, temp_max, hum_min, hum_max,
         prec_tot, prec_nat, vent_min, vent_max,
         pres_min, pres_max, date, note
@@ -377,7 +377,7 @@ CREATE OR REPLACE PROCEDURE "Herbivorie".carnetmeteo_MOD_all(
     _note     TEXT
 )
 BEGIN ATOMIC
-    UPDATE CarnetMeteo
+    UPDATE "Staging".CarnetMeteo
     SET zone = zone,
         temp_min = _temp_min,
         temp_max = _temp_max,
@@ -400,7 +400,7 @@ CREATE OR REPLACE PROCEDURE "Herbivorie".carnetmeteo_MOD_note(
     _note TEXT
 )
 BEGIN ATOMIC
-    UPDATE CarnetMeteo
+    UPDATE "Staging".CarnetMeteo
     SET note = _note
     WHERE date = _date;
 END;
@@ -410,6 +410,6 @@ CREATE OR REPLACE PROCEDURE "Herbivorie".carnetmeteo_RET(
     _date TEXT
 )
 BEGIN ATOMIC
-    DELETE FROM CarnetMeteo
+    DELETE FROM "Staging".CarnetMeteo
     WHERE date = _date;
 END;

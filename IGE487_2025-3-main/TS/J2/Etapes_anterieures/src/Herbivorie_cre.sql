@@ -70,7 +70,7 @@ CREATE DOMAIN Taux_val
 CREATE DOMAIN Plant_id
  -- Code identifiant uniquement un plant de trille.
   TEXT
-  CHECK (VALUE SIMILAR TO 'MM[A-C][0-9]{4}');
+  CHECK (VALUE SIMILAR TO '[A-Z]{3}[0-9]{4}');
 
 CREATE DOMAIN Parcelle_id
  -- La parcelle est une subdivision de la placette.
@@ -87,12 +87,12 @@ CREATE DOMAIN Etat_id
 
 CREATE DOMAIN Site_id
 TEXT
-CHECK(VALUE SIMILAR TO '[A-Z]{2}[0-9]{2}');
+CHECK(VALUE SIMILAR TO 'M[A-Z]{1}');
 
 
 CREATE DOMAIN Zone_id
     TEXT
-    CHECK(VALUE SIMILAR TO 'MM[A-C]');
+    CHECK(VALUE SIMILAR TO '[A-Z]{3}');
 COMMENT ON DOMAIN Zone_id IS 'Code de zone relatif à un site (ex: MMA).';
 
 
@@ -344,35 +344,21 @@ COMMENT ON TABLE ObsDimension IS 'Dimensions de feuille observées pour un plant
 COMMENT ON TABLE ObsFloraison IS 'Floraison observée (booléen) pour un plant à une date.';
 COMMENT ON TABLE ObsEtat IS 'État observé d’un plant (id, date) → etat.';
 
-CREATE OR REPLACE FUNCTION check_tval_in_taux_bounds() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION check_tval_in_taux_bounds(tcat1 TTaux, tval Taux_val)
+RETURNS boolean AS $$
 DECLARE
-  min_val INTEGER;
-  max_val INTEGER;
+    lo int;
+    hi int;
 BEGIN
-  SELECT tMin, tMax INTO min_val, max_val
-  FROM Taux
-  WHERE tCat = NEW.tcat;
+    -- Si catégorie inconnue → invalide
+    SELECT tmin, tmax INTO lo, hi FROM Taux WHERE tCat = tcat1;
 
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Catégorie de taux % non trouvée dans Taux', NEW.tcat;
-  END IF;
+    IF lo IS NULL OR hi IS NULL THEN
+        RETURN FALSE;
+    END IF;
 
-  IF NEW.tVal IS NOT NULL AND (NEW.tVal < min_val OR NEW.tVal > max_val) THEN
-    RAISE EXCEPTION 'Valeur tVal (%) hors de l''intervalle [% - %] pour tCat %',
-      NEW.tVal, min_val, max_val, NEW.tcat;
-  END IF;
-
-  RETURN NEW;
+    RETURN (tval BETWEEN lo AND hi);
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_check_tval_obstruction
-BEFORE INSERT OR UPDATE ON Placette_Obstruction
-FOR EACH ROW
-EXECUTE FUNCTION check_tval_in_taux_bounds();
-
-CREATE TRIGGER trg_check_tval_couvert
-BEFORE INSERT OR UPDATE ON Placette_Couvert
-FOR EACH ROW
-EXECUTE FUNCTION check_tval_in_taux_bounds();
 

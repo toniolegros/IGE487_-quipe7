@@ -143,6 +143,11 @@ CREATE TABLE ObsPrecipitations
   CONSTRAINT ObsPrecipitations_cr1 FOREIGN KEY (zone) REFERENCES Zone(zone)
 );
 
+
+DROP TABLE IF EXISTS "CarnetMeteo" CASCADE;
+CREATE SCHEMA IF NOT EXISTS "Staging";
+SET SCHEMA 'Staging';
+
 CREATE TABLE CarnetMeteo
   -- Carnet de terrain contenant les données brutes des observations météorologiques.
   -- La table est utilisée afin de vérifier les données en vue de leur insertion
@@ -164,6 +169,8 @@ CREATE TABLE CarnetMeteo
   note      text    -- note supplémentaire à propos des conditions du jour
 
 );
+
+SET SCHEMA 'Herbivorie';
 
 CREATE OR REPLACE FUNCTION verif_pression_vent()
 RETURNS TRIGGER AS $$
