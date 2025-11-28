@@ -1,13 +1,13 @@
 ----------------------------------------------------------------------
 -- CRÉATION DU SCHÉMA STAGING
 ----------------------------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS "Staging";
+CREATE SCHEMA IF NOT EXISTS "ige487_68";
 
 
 ----------------------------------------------------------------------
 -- 1. site.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".site (
+CREATE TABLE IF NOT EXISTS "ige487_68".site (
     siteid TEXT,
     nom TEXT
 );
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS "Staging".site (
 ----------------------------------------------------------------------
 -- 2. zone.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".zone (
+CREATE TABLE IF NOT EXISTS "ige487_68".zone (
     zoneid TEXT,
     siteid TEXT
 );
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS "Staging".zone (
 -- ⚠ Ton arbre.csv ressemble en réalité à un doublon de site.csv
 -- Mais je crée la table quand même pour respecter ton fichier
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".arbre (
+CREATE TABLE IF NOT EXISTS "ige487_68".arbre (
     arbreid TEXT,
     description TEXT
 );
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS "Staging".arbre (
 ----------------------------------------------------------------------
 -- 4. peuplement.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".peuplement (
+CREATE TABLE IF NOT EXISTS "ige487_68".peuplement (
     peuplementid TEXT,
     description TEXT
 );
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS "Staging".peuplement (
 ----------------------------------------------------------------------
 -- 5. placette.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".placette (
+CREATE TABLE IF NOT EXISTS "ige487_68".placette (
     placetteid TEXT,
     siteid TEXT,
     zoneid TEXT,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS "Staging".placette (
 ----------------------------------------------------------------------
 -- 6. parcelle.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".parcelle (
+CREATE TABLE IF NOT EXISTS "ige487_68".parcelle (
     siteid TEXT,
     zoneid TEXT,
     placetteid TEXT,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS "Staging".parcelle (
 ----------------------------------------------------------------------
 -- 7. plant.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".plant (
+CREATE TABLE IF NOT EXISTS "ige487_68".plant (
     plantid TEXT
 );
 
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS "Staging".plant (
 ----------------------------------------------------------------------
 -- 8. obsarbre.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obsarbre (
+CREATE TABLE IF NOT EXISTS "ige487_68".obsarbre (
     siteid TEXT,
     zoneid TEXT,
     placetteid TEXT,
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obsarbre (
 ----------------------------------------------------------------------
 -- 9. obscouverture.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obscouverture (
+CREATE TABLE IF NOT EXISTS "ige487_68".obscouverture (
     siteid TEXT,
     zoneid TEXT,
     placetteid TEXT,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obscouverture (
 ----------------------------------------------------------------------
 -- 10. obsobstruction.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obsobstruction (
+CREATE TABLE IF NOT EXISTS "ige487_68".obsobstruction (
     siteid TEXT,
     zoneid TEXT,
     placetteid TEXT,
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obsobstruction (
 ----------------------------------------------------------------------
 -- 11. obsplantlocalisation.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obsplantlocalisation (
+CREATE TABLE IF NOT EXISTS "ige487_68".obsplantlocalisation (
     plantid TEXT,
     date DATE,
     siteid TEXT,
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obsplantlocalisation (
 ----------------------------------------------------------------------
 -- 12. obsdimension.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obsdimension (
+CREATE TABLE IF NOT EXISTS "ige487_68".obsdimension (
     plantid TEXT,
     date DATE,
     longueur NUMERIC,
@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obsdimension (
 ----------------------------------------------------------------------
 -- 13. obsfloraison.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obsfloraison (
+CREATE TABLE IF NOT EXISTS "ige487_68".obsfloraison (
     plantid TEXT,
     date DATE,
     typefloraison TEXT,
@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obsfloraison (
 ----------------------------------------------------------------------
 -- 14. obsetat.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obsetat (
+CREATE TABLE IF NOT EXISTS "ige487_68".obsetat (
     plantid TEXT,
     date DATE,
     etat TEXT,
@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obsetat (
 ----------------------------------------------------------------------
 -- 15. obshumidite.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obshumidite (
+CREATE TABLE IF NOT EXISTS "ige487_68".obshumidite (
     siteid TEXT,
     zoneid TEXT,
     placetteid TEXT,
@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obshumidite (
 ----------------------------------------------------------------------
 -- 16. obspression.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obspression (
+CREATE TABLE IF NOT EXISTS "ige487_68".obspression (
     siteid TEXT,
     zoneid TEXT,
     placetteid TEXT,
@@ -197,7 +197,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obspression (
 ----------------------------------------------------------------------
 -- 17. obstemperature.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obstemperature (
+CREATE TABLE IF NOT EXISTS "ige487_68".obstemperature (
     siteid TEXT,
     zoneid TEXT,
     placetteid TEXT,
@@ -210,7 +210,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obstemperature (
 ----------------------------------------------------------------------
 -- 18. obsprecipitation.csv
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".obsprecipitation (
+CREATE TABLE IF NOT EXISTS "ige487_68".obsprecipitation (
     siteid TEXT,
     zoneid TEXT,
     placetteid TEXT,
@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS "Staging".obsprecipitation (
 -- 19. precipitation.csv (doublon public)
 -- Je crée quand même la table
 ----------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS "Staging".precipitation (
+CREATE TABLE IF NOT EXISTS "ige487_68".precipitation (
     siteid TEXT,
     zoneid TEXT,
     placetteid TEXT,
