@@ -1,0 +1,25 @@
+siteid;zoneid;placetteid;arbreid;date;rang;note
+S01;Z01;A1;ABIBAL;2017-06-15;1;Conditions typiques du secteur.
+S01;Z01;A1;ACESAC;2017-06-15;2;Conditions typiques du secteur.
+S01;Z01;A1;BETALL;2017-06-15;3;Conditions typiques du secteur.
+S01;Z01;A2;BETPAP;2017-06-15;1;Légère densité de sous-bois.
+S01;Z01;A2;FAGGRA;2017-06-15;2;Légère densité de sous-bois.
+S01;Z01;A2;PICMAR;2017-06-15;3;Conditions typiques du secteur.
+S01;Z01;A3;ABIBAL;2017-06-15;1;Structure homogène.
+S01;Z01;A3;ACESAC;2017-06-15;2;Légère densité de sous-bois.
+S01;Z01;A3;BETALL;2017-06-15;3;Légère densité de sous-bois.
+S01;Z01;A4;BETPAP;2017-06-15;1;Légère densité de sous-bois.
+S01;Z01;A4;FAGGRA;2017-06-15;2;Structure homogène.
+S01;Z01;A4;PICMAR;2017-06-15;3;Conditions typiques du secteur.
+S01;Z02;B1;ABIBAL;2017-06-15;1;Structure homogène.
+S01;Z02;B1;ACESAC;2017-06-15;2;Structure homogène.
+S01;Z02;B1;BETALL;2017-06-15;3;Structure homogène.
+S01;Z02;B2;BETPAP;2017-06-15;1;Légère densité de sous-bois.
+S01;Z02;B2;FAGGRA;2017-06-15;2;Conditions typiques du secteur.
+S01;Z02;B2;PICMAR;2017-06-15;3;Structure homogène.
+S01;Z02;B3;ABIBAL;2017-06-15;1;Légère densité de sous-bois.
+S01;Z02;B3;ACESAC;2017-06-15;2;Légère densité de sous-bois.
+S01;Z02;B3;BETALL;2017-06-15;3;Légère densité de sous-bois.
+S01;Z02;B4;BETPAP;2017-06-15;1;Légère densité de sous-bois.
+S01;Z02;B4;FAGGRA;2017-06-15;2;Structure homogène.
+S01;Z02;B4;PICMAR;2017-06-15;3;Légère densité de sous-bois.

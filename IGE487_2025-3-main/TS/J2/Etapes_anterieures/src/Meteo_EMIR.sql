@@ -53,6 +53,7 @@ END;
 -- ObsTemperature : Évaluation
 CREATE OR REPLACE FUNCTION "Herbivorie".obstemperature_EVA()
 RETURNS TABLE (
+    id site_id,
     zone zone_id,
     date      Date_eco,
     temp_min  Temperature,
@@ -66,6 +67,7 @@ END;
 
 -- ObsTemperature : Insertion
 CREATE OR REPLACE PROCEDURE "Herbivorie".obstemperature_INS(
+    _id site_id,
     _zone zone_id,
     _date     Date_eco,
     _temp_min Temperature,
@@ -73,12 +75,13 @@ CREATE OR REPLACE PROCEDURE "Herbivorie".obstemperature_INS(
     _note     TEXT
 )
 BEGIN ATOMIC
-    INSERT INTO ObsTemperature (zone, date, temp_min, temp_max, note)
-    VALUES (_zone, _date, _temp_min, _temp_max, _note);
+    INSERT INTO ObsTemperature (id, zone, date, temp_min, temp_max, note)
+    VALUES (_id, _zone, _date, _temp_min, _temp_max, _note);
 END;
 
 -- ObsTemperature : Modification (temp_min / temp_max / note)
 CREATE OR REPLACE PROCEDURE "Herbivorie".obstemperature_MOD_temp(
+    _id site_id,
     _zone zone_id,
     _date     Date_eco,
     _temp_min Temperature,
@@ -114,10 +117,12 @@ END;
 -- ObsHumidite : Évaluation
 CREATE OR REPLACE FUNCTION "Herbivorie".obshumidite_EVA()
 RETURNS TABLE (
+    id site_id,
     zone zone_id,
     date     Date_eco,
     hum_min  Humidite,
-    hum_max  Humidite
+    hum_max  Humidite,
+    note      TEXT
 )
 BEGIN ATOMIC
     SELECT *
@@ -126,18 +131,21 @@ END;
 
 -- ObsHumidite : Insertion
 CREATE OR REPLACE PROCEDURE "Herbivorie".obshumidite_INS(
+    _id site_id,
     _zone zone_id,
     _date    Date_eco,
     _hum_min Humidite,
-    _hum_max Humidite
+    _hum_max Humidite,
+    _note      TEXT
 )
 BEGIN ATOMIC
-    INSERT INTO ObsHumidite (zone, date, hum_min, hum_max)
-    VALUES (_zone, _date, _hum_min, _hum_max);
+    INSERT INTO ObsHumidite (id, zone, date, hum_min, hum_max, note)
+    VALUES (_id, _zone, _date, _hum_min, _hum_max, _note);
 END;
 
 -- ObsHumidite : Modification
 CREATE OR REPLACE PROCEDURE "Herbivorie".obshumidite_MOD_hum(
+    _id site_id,
     _zone zone_id,
     _date    Date_eco,
     _hum_min Humidite,
@@ -163,10 +171,12 @@ END;
 -- ObsVents : Évaluation
 CREATE OR REPLACE FUNCTION "Herbivorie".obsvents_EVA()
 RETURNS TABLE (
+    id site_id,
     zone zone_id,
     date     Date_eco,
     vent_min Vitesse,
-    vent_max Vitesse
+    vent_max Vitesse,
+    note      TEXT
 )
 BEGIN ATOMIC
     SELECT *
@@ -175,18 +185,21 @@ END;
 
 -- ObsVents : Insertion
 CREATE OR REPLACE PROCEDURE "Herbivorie".obsvents_INS(
+    _id site_id,
     _zone zone_id,
     _date     Date_eco,
     _vent_min Vitesse,
-    _vent_max Vitesse
+    _vent_max Vitesse,
+    _note      TEXT
 )
 BEGIN ATOMIC
-    INSERT INTO ObsVents (zone, date, vent_min, vent_max)
-    VALUES (_zone, _date, _vent_min, _vent_max);
+    INSERT INTO ObsVents (id, zone, date, vent_min, vent_max, note)
+    VALUES (_id, _zone, _date, _vent_min, _vent_max, _note);
 END;
 
 -- ObsVents : Modification
 CREATE OR REPLACE PROCEDURE "Herbivorie".obsvents_MOD_vent(
+    _id site_id,
     _zone zone_id,
     _date     Date_eco,
     _vent_min Vitesse,
@@ -212,10 +225,12 @@ END;
 -- ObsPression : Évaluation
 CREATE OR REPLACE FUNCTION "Herbivorie".obspression_EVA()
 RETURNS TABLE (
+    id site_id,
     zone zone_id,
     date     Date_eco,
     pres_min Pression,
-    pres_max Pression
+    pres_max Pression,
+    note      TEXT
 )
 BEGIN ATOMIC
     SELECT *
@@ -224,18 +239,21 @@ END;
 
 -- ObsPression : Insertion
 CREATE OR REPLACE PROCEDURE "Herbivorie".obspression_INS(
+    _id site_id,
     _zone zone_id,
     _date     Date_eco,
     _pres_min Pression,
-    _pres_max Pression
+    _pres_max Pression,
+    _note      TEXT
 )
 BEGIN ATOMIC
-    INSERT INTO ObsPression (zone,date, pres_min, pres_max)
-    VALUES (_zone,_date, _pres_min, _pres_max);
+    INSERT INTO ObsPression (id, zone,date, pres_min, pres_max, note)
+    VALUES (_id, _zone,_date, _pres_min, _pres_max, _note);
 END;
 
 -- ObsPression : Modification
 CREATE OR REPLACE PROCEDURE "Herbivorie".obspression_MOD_pres(
+    _id site_id,
     _zone zone_id,
     _date     Date_eco,
     _pres_min Pression,
@@ -261,10 +279,12 @@ END;
 -- ObsPrecipitations : Évaluation
 CREATE OR REPLACE FUNCTION "Herbivorie".obsprecipitations_EVA()
 RETURNS TABLE (
+    id site_id,
     zone zone_id,
     date     Date_eco,
     prec_tot HNP,
-    prec_nat Code_P
+    prec_nat Code_P,
+    note      TEXT
 )
 BEGIN ATOMIC
     SELECT *
@@ -273,18 +293,21 @@ END;
 
 -- ObsPrecipitations : Insertion
 CREATE OR REPLACE PROCEDURE "Herbivorie".obsprecipitations_INS(
+    _id site_id,
     _zone zone_id,
     _date     Date_eco,
     _prec_tot HNP,
-    _prec_nat Code_P
+    _prec_nat Code_P,
+    _note text
 )
 BEGIN ATOMIC
-    INSERT INTO ObsPrecipitations (zone, date, prec_tot, prec_nat)
-    VALUES (_zone, _date, _prec_tot, _prec_nat);
+    INSERT INTO ObsPrecipitations (id, zone, date, prec_tot, prec_nat, note)
+    VALUES (_id, _zone, _date, _prec_tot, _prec_nat, _note);
 END;
 
 -- ObsPrecipitations : Modification (seulement prec_tot, la nature est la clé)
 CREATE OR REPLACE PROCEDURE "Herbivorie".obsprecipitations_MOD_prec_tot(
+    _id site_id,
     _zone zone_id,
     _date     Date_eco,
     _prec_nat Code_P,
@@ -312,6 +335,7 @@ END;
 -- CarnetMeteo : Évaluation
 CREATE OR REPLACE FUNCTION "Herbivorie".carnetmeteo_EVA()
 RETURNS TABLE (
+    id text,
     zone text,
     temp_min TEXT,
     temp_max TEXT,
@@ -333,6 +357,7 @@ END;
 
 -- CarnetMeteo : Insertion
 CREATE OR REPLACE PROCEDURE "Herbivorie".carnetmeteo_INS(
+    _id text,
     _zone text,
     _temp_min TEXT,
     _temp_max TEXT,
@@ -349,12 +374,12 @@ CREATE OR REPLACE PROCEDURE "Herbivorie".carnetmeteo_INS(
 )
 BEGIN ATOMIC
     INSERT INTO "Staging".CarnetMeteo (
-        zone, temp_min, temp_max, hum_min, hum_max,
+        id, zone, temp_min, temp_max, hum_min, hum_max,
         prec_tot, prec_nat, vent_min, vent_max,
         pres_min, pres_max, date, note
     )
     VALUES (
-        _zone, _temp_min, _temp_max, _hum_min, _hum_max,
+        _id, _zone, _temp_min, _temp_max, _hum_min, _hum_max,
         _prec_tot, _prec_nat, _vent_min, _vent_max,
         _pres_min, _pres_max, _date, _note
     );
@@ -362,6 +387,7 @@ END;
 
 -- CarnetMeteo : Modification (mise à jour générale des colonnes non clés)
 CREATE OR REPLACE PROCEDURE "Herbivorie".carnetmeteo_MOD_all(
+    _id text,
     _zone TEXT,
     _date     TEXT,
     _temp_min TEXT,
@@ -378,7 +404,8 @@ CREATE OR REPLACE PROCEDURE "Herbivorie".carnetmeteo_MOD_all(
 )
 BEGIN ATOMIC
     UPDATE "Staging".CarnetMeteo
-    SET zone = zone,
+    SET id = _id,
+        zone = _zone,
         temp_min = _temp_min,
         temp_max = _temp_max,
         hum_min  = _hum_min,

@@ -11,17 +11,22 @@ AS $$
 DECLARE
   d date;
 BEGIN
+  IF v IS NULL THEN
+      RETURN FALSE;
+  END IF;
+
   BEGIN
     d := v::date;
   EXCEPTION WHEN others THEN
     RETURN FALSE;
   END;
 
-  RETURN d >= DATE '1582-12-20' AND d <= current_date;
+  RETURN d >= DATE '1582-12-20'
+     AND d <= current_date;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION DateEco_CONV(v text)
+CREATE OR REPLACE FUNCTION DateEco_conv(v text)
 RETURNS Date_eco
 LANGUAGE plpgsql
 STABLE
@@ -33,7 +38,7 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  result := v::Date_eco;
+  result := v::date;
   RETURN result;
 
 EXCEPTION WHEN others THEN
@@ -71,8 +76,8 @@ LANGUAGE plpgsql
 IMMUTABLE
 AS $$
 BEGIN
-  RETURN v IS NOT NULL
-     AND v ~ '^M[A-Z]$';
+  RETURN v IS NOT NULL;
+     --AND v ~ '^M[A-Z]$';
 END;
 $$;
 
@@ -105,8 +110,8 @@ LANGUAGE plpgsql
 IMMUTABLE
 AS $$
 BEGIN
-  RETURN v IS NOT NULL
-     AND v ~ '^[A-Z]{3}$';
+  RETURN v IS NOT NULL;
+    -- AND v ~ '^[A-Z]{3}$';
 END;
 $$;
 
@@ -470,7 +475,7 @@ BEGIN
      RETURN FALSE;
   END;
 
-  RETURN p BETWEEN 1 AND 99;
+  RETURN p BETWEEN 0 AND 99;
 END;
 $$;
 
@@ -494,26 +499,6 @@ EXCEPTION WHEN others THEN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION Parcelle_verif(v Parcelle_id)
-RETURNS boolean
-LANGUAGE plpgsql
-IMMUTABLE
-AS $$
-BEGIN
-  RETURN v BETWEEN 0 AND 99;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION Parcelle_CONV(v Parcelle_id)
-RETURNS Parcelle_id
-LANGUAGE plpgsql
-IMMUTABLE
-AS $$
-BEGIN
-  RETURN v;
-END;
-$$;
-
 -------------------------------------------------
 -- Dim_mm (1 à 3 chiffres, 1..999)
 -------------------------------------------------
@@ -524,7 +509,7 @@ IMMUTABLE
 AS $$
 BEGIN
   RETURN v ~ '^[0-9]{1,3}$'
-     AND v::integer BETWEEN 1 AND 999;
+     AND v::integer BETWEEN 0 AND 999;
 END;
 $$;
 
@@ -547,7 +532,7 @@ LANGUAGE plpgsql
 IMMUTABLE
 AS $$
 BEGIN
-  RETURN v BETWEEN 1 AND 999;
+  RETURN v BETWEEN 0 AND 999;
 END;
 $$;
 

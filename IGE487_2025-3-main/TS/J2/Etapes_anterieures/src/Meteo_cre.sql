@@ -40,14 +40,16 @@ CREATE TABLE ObsTemperature
   --            était comprise entre "temp_min" et "temp_max".
   --            À cette occasion, l’observateur a consigné le commentaire "note".
 (
+  id site_id not null,
   zone    zone_id   not null,
   date      Date_eco not null,
   temp_min  Temperature NOT NULL,
   temp_max  Temperature NOT NULL,
   note      TEXT NOT NULL,
-  CONSTRAINT ObsTemperature_cc0 PRIMARY KEY (zone,date),
+  CONSTRAINT ObsTemperature_cc0 PRIMARY KEY (id, zone,date),
   CONSTRAINT ObsTemperature_inter CHECK (temp_min <= temp_max),
-  CONSTRAINT ObsTemperature_cr0 FOREIGN KEY (zone) REFERENCES Zone(zone)
+  CONSTRAINT ObsTemperature_cr0 FOREIGN KEY (zone) REFERENCES Zone(zone),
+  CONSTRAINT ObsTemperature_cr1 FOREIGN KEY (id) REFERENCES site(id)
 );
 
 CREATE DOMAIN Humidite
@@ -60,13 +62,16 @@ CREATE TABLE ObsHumidite
   -- PRÉDICAT : Il a été observé en date du "date" que la variation de l'humidité absolue
   --            était comprise entre "hum_min" et "hum_max".
 (
+  id site_id not null,
   zone      Zone_id  NOT NULL,
   date      Date_eco NOT NULL,
   hum_min   Humidite NOT NULL,
   hum_max   Humidite NOT NULL,
-  CONSTRAINT ObsHumidite_cc0 PRIMARY KEY (zone, date),
+  note      TEXT NOT NULL,
+  CONSTRAINT ObsHumidite_cc0 PRIMARY KEY (id, zone, date),
   CONSTRAINT ObsHumidite_inter CHECK (hum_min <= hum_max),
-  CONSTRAINT ObsHumidite_cr0 FOREIGN KEY (zone) REFERENCES Zone(zone)
+  CONSTRAINT ObsHumidite_cr0 FOREIGN KEY (zone) REFERENCES Zone(zone),
+  CONSTRAINT ObsHumidite_cr1 FOREIGN KEY (id) REFERENCES site(id)
 );
 
 CREATE DOMAIN Vitesse
@@ -79,13 +84,16 @@ CREATE TABLE ObsVents
   -- PRÉDICAT : Il a été observé en date du "date" que la variation de la vitesse des vents
   --            était comprise entre "vent_min" et "vent_max".
 (
+  id site_id not null,
   zone      Zone_id  NOT NULL,
   date      Date_eco NOT NULL,
   vent_min  Vitesse  NOT NULL,
   vent_max  Vitesse  NOT NULL,
-  CONSTRAINT ObsVents_cc0 PRIMARY KEY (zone, date),
+  note      TEXT NOT NULL,
+  CONSTRAINT ObsVents_cc0 PRIMARY KEY (id, zone, date),
   CONSTRAINT ObsVents_inter CHECK (vent_min <= vent_max),
-  CONSTRAINT ObsVents_cr0 FOREIGN KEY (zone) REFERENCES Zone(zone)
+  CONSTRAINT ObsVents_cr0 FOREIGN KEY (zone) REFERENCES Zone(zone),
+  CONSTRAINT ObsVents_cr1 FOREIGN KEY (id) REFERENCES site(id)
 );
 
 CREATE DOMAIN Pression
@@ -98,13 +106,16 @@ CREATE TABLE ObsPression
   -- PRÉDICAT : Il a été observé en date du "date" que la variation de la pression atmosphérique
   --            était comprise entre "vent_min" et "vent_max".
 (
+  id site_id not null,
   zone      Zone_id  NOT NULL,
   date      Date_eco NOT NULL,
   pres_min  Pression NOT NULL,
   pres_max  Pression NOT NULL,
-  CONSTRAINT ObsPression_cc0 PRIMARY KEY (zone, date),
+  note      TEXT NOT NULL,
+  CONSTRAINT ObsPression_cc0 PRIMARY KEY (id, zone, date),
   CONSTRAINT ObsPression_inter CHECK (pres_min <= pres_max),
-  CONSTRAINT ObsPression_cr0 FOREIGN KEY (zone) REFERENCES Zone(zone)
+  CONSTRAINT ObsPression_cr0 FOREIGN KEY (zone) REFERENCES Zone(zone),
+  CONSTRAINT ObsPression_cr1 FOREIGN KEY (id) REFERENCES site(id)
 );
 
 CREATE DOMAIN HNP
@@ -134,13 +145,16 @@ CREATE TABLE ObsPrecipitations
   -- PRÉDICAT : Il a été observé en date du "date" que la hauteur normée totale des précipitations
   --            de type "prec_nat" était de "prec_tot".
 (
+  id site_id not null,
   zone      Zone_id  NOT NULL,
   date      Date_eco NOT NULL,
   prec_tot  HNP      NOT NULL,
-  prec_nat  Code_P   NOT NULL,
-  CONSTRAINT ObsPrecipitations_cc0 PRIMARY KEY (zone, date, prec_nat),
+  prec_nat  Code_P   not null,
+  note      TEXT NOT NULL,
+  CONSTRAINT ObsPrecipitations_cc0 PRIMARY KEY (id, zone, date, prec_nat),
   CONSTRAINT ObsPrecipitations_cr0 FOREIGN KEY (prec_nat) REFERENCES TypePrecipitations (code),
-  CONSTRAINT ObsPrecipitations_cr1 FOREIGN KEY (zone) REFERENCES Zone(zone)
+  CONSTRAINT ObsPrecipitations_cr1 FOREIGN KEY (zone) REFERENCES Zone(zone),
+  CONSTRAINT ObsPrecipitations_cr2 FOREIGN KEY (id) REFERENCES site(id)
 );
 
 
@@ -153,6 +167,7 @@ CREATE TABLE CarnetMeteo
   -- La table est utilisée afin de vérifier les données en vue de leur insertion
   -- dans le modèle de données.
 (
+  id text,
   zone text,
   temp_min  text,   -- la température minimale,
   temp_max  text,   -- la température maximale,

@@ -86,13 +86,13 @@ CREATE DOMAIN Etat_id
   CHECK (VALUE SIMILAR TO '[A-Z]{1}');
 
 CREATE DOMAIN Site_id
-TEXT
-CHECK(VALUE SIMILAR TO 'M[A-Z]{1}');
+TEXT;
+--CHECK(VALUE SIMILAR TO 'M[A-Z]{1}');
 
 
 CREATE DOMAIN Zone_id
-    TEXT
-    CHECK(VALUE SIMILAR TO '[A-Z]{3}');
+    TEXT;
+    --CHECK(VALUE SIMILAR TO '[A-Z][0-9]{3}');
 COMMENT ON DOMAIN Zone_id IS 'Code de zone relatif à un site (ex: MMA).';
 
 
@@ -179,63 +179,75 @@ INSERT INTO UNITE (unite_id, unite, description) VALUES (4, '%', 'Pourcentage') 
 
 
 CREATE TABLE Placette(
+ id site_id not null,
  zone Zone_id not null,
  plac Placette_id not null,
-CONSTRAINT placette_cc0 PRIMARY KEY (zone,plac),
-constraint placette_cr0 foreign key (zone) references Zone(zone)
+CONSTRAINT placette_cc0 PRIMARY KEY (id,zone,plac),
+constraint placette_cr0 foreign key (zone) references Zone(zone),
+constraint placette_cr1 foreign key (id) references site(id)
 );
 
 CREATE TABLE Placette_core (
+ id site_id not null,
  zone zone_id not null,
  plac Placette_id not null,
  peup Peuplement_id NOT NULL,
  date Date_eco NOT NULL,
-CONSTRAINT placette_core_cc0 PRIMARY KEY (zone, plac, peup, date),
-CONSTRAINT placette_core_cr0 foreign key (zone,plac) references Placette(zone,plac),
+CONSTRAINT placette_core_cc0 PRIMARY KEY (id, zone, plac, peup, date),
+CONSTRAINT placette_core_cr0 foreign key (id, zone,plac) references Placette(id, zone,plac),
+constraint placette_core_cr2 foreign key (id) references site(id),
 CONSTRAINT Placette_core_cr1 FOREIGN KEY (peup) REFERENCES Peuplement(peup)
 );
 
 CREATE TABLE Placette_Dominant (
+ id site_id not null,
  zone Zone_id not null,
  plac  Placette_id NOT NULL,
  rang  rang    NOT NULL,
  arbre Arbre_id    NOT NULL,
  -- chaque arbre ne peut apparaître qu'une fois par placette
 UNIQUE (plac, arbre),
-CONSTRAINT placette_Dominant_cc0 PRIMARY KEY (zone, plac, rang),
-CONSTRAINT Placette_Dominant_cr0 FOREIGN KEY (zone,plac) references Placette(zone,plac),
+CONSTRAINT placette_Dominant_cc0 PRIMARY KEY (id, zone, plac, rang),
+CONSTRAINT Placette_Dominant_cr0 FOREIGN KEY (id, zone,plac) references Placette(id, zone,plac),
+constraint Placette_Dominant_cr2 foreign key (id) references site(id),
 CONSTRAINT Placette_Dominant_cr1 FOREIGN KEY (arbre) REFERENCES arbre(arbre)
 );
 
 CREATE TABLE Placette_Obstruction (
+ id site_id not null,
  zone Zone_id not null,
  plac Placette_id NOT NULL,
  nature obstruction_nature NOT NULL,
  hauteur hauteur_obs NOT NULL,
  tcat TTaux NOT NULL,
  tval taux_val not null,
- CONSTRAINT Placette_Obstruction_cc0 PRIMARY KEY (zone, plac, nature, hauteur),
- CONSTRAINT Placette_Obstruction_cr0 FOREIGN KEY (zone,plac) references Placette(zone,plac),
+ CONSTRAINT Placette_Obstruction_cc0 PRIMARY KEY (id,zone, plac, nature, hauteur),
+ CONSTRAINT Placette_Obstruction_cr0 FOREIGN KEY (id, zone,plac) references Placette(id, zone,plac),
+ constraint Placette_Obstruction_cr2 foreign key (id) references site(id),
  CONSTRAINT Placette_Obstruction_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat)
 );
 
 CREATE TABLE Placette_Couvert (
+ id site_id not null,
  zone Zone_id not null,
  plac Placette_id NOT NULL,
  ctype couvert_type NOT NULL,
  tcat  TTaux NOT NULL,
  tval taux_val not null,
- CONSTRAINT Placette_Couvert_cc0 PRIMARY KEY (zone, plac, ctype),
- CONSTRAINT Placette_Couvert_cr0 FOREIGN KEY (zone,plac) references Placette(zone,plac),
- CONSTRAINT Placette_Couvert_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat)
+ CONSTRAINT Placette_Couvert_cc0 PRIMARY KEY (id, zone, plac, ctype),
+ CONSTRAINT Placette_Couvert_cr0 FOREIGN KEY (id, zone,plac) references Placette(id,zone,plac),
+ CONSTRAINT Placette_Couvert_cr1 FOREIGN KEY (tcat) REFERENCES Taux(tCat),
+ constraint Placette_Couvert_cr2 foreign key (id) references site(id)
 );
 
 CREATE TABLE Parcelle (
+  id site_id not null,
   zone Zone_id not null,
   plac Placette_id NOT NULL, -- placette dans laquelle est le trille
   parcelle Parcelle_id    NOT NULL, -- parcelle dans laquelle se trouve le trille
   CONSTRAINT PARCELLE_cc0 PRIMARY KEY (zone, plac, parcelle),
-  CONSTRAINT PARCELLE_cr0 FOREIGN KEY (zone,plac) references Placette(zone,plac)
+  constraint Parcelle_cr1 foreign key (id) references site(id),
+  CONSTRAINT PARCELLE_cr0 FOREIGN KEY (id, zone,plac) references Placette(id, zone,plac)
 );
 
 
@@ -245,13 +257,15 @@ CREATE TABLE Plant
  --   placette "placette" en date du "date".
  --   À cette occasion, l’observateur a consigné le commentaire "note".
 (
+  s_id site_id not null,
   zone Zone_id not null,
   id       Plant_id    NOT NULL, -- identifiant unique de chaque trille
   plac Placette_id NOT NULL, -- placette dans laquelle est le trille
   date     Date_eco    not null, -- date de la prise de données
   note     Description NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT Plant_cc0 PRIMARY KEY (id),
-  CONSTRAINT Plant_cr0 FOREIGN KEY (zone,plac) references Placette(zone,plac)
+    constraint plant_cr1 foreign key (s_id) references site(id),
+  CONSTRAINT Plant_cr0 FOREIGN KEY (s_id, zone,plac) references Placette(id, zone,plac)
 );
 -- ALTER TABLE Plant ALTER COLUMN note DROP NOT NULL;
 
@@ -279,12 +293,14 @@ CREATE TABLE ObsFloraison
  --   À cette occasion, l’observateur a consigné le commentaire "note".
 (
   id       Plant_id NOT NULL, -- identifiant unique de chaque trille
-  fleur    BOOLEAN  NOT NULL, -- présence de fleur
+  fleur    BOOLEAN  NOT NULL DEFAULT FALSE, -- présence de fleur
   date     Date_eco NOT NULL, -- date de l’observation
   note     Description NOT NULL, -- note supplémentaire à propos du trille
   CONSTRAINT ObsFloraison_cc0 PRIMARY KEY (id, date),
   CONSTRAINT ObsFloraison_cr0 FOREIGN KEY (id) REFERENCES Plant (id)
 );
+COMMENT ON COLUMN ObsFloraison.fleur IS 'TRUE = fleur présente, FALSE = pas de fleur (défaut)';
+COMMENT ON COLUMN ObsFloraison.note IS 'Commentaire optionnel (défaut: vide si aucune donnée saisie)';
 
 CREATE TABLE Etat
  -- Répertoire des états d’un plant.

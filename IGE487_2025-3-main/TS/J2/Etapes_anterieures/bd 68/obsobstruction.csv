@@ -1,0 +1,97 @@
+siteid;zoneid;placetteid;date;hauteur;tauxfeuillu;tauxconifere;note
+S01;Z01;A1;2017-05-15;1;17.33;33.60;Conditions typiques du secteur.
+S01;Z01;A1;2017-05-15;2;12.11;44.23;Légère densité de sous-bois.
+S01;Z01;A1;2017-06-15;1;12.06;19.01;Légère densité de sous-bois.
+S01;Z01;A1;2017-06-15;2;19.07;33.49;Légère densité de sous-bois.
+S01;Z01;A1;2017-07-15;1;27.66;36.11;Structure homogène.
+S01;Z01;A1;2017-07-15;2;41.81;49.94;Légère densité de sous-bois.
+S01;Z01;A1;2017-08-15;1;42.62;33.95;Légère densité de sous-bois.
+S01;Z01;A1;2017-08-15;2;24.66;45.73;Légère densité de sous-bois.
+S01;Z01;A1;2017-09-15;1;33.81;18.97;Légère densité de sous-bois.
+S01;Z01;A1;2017-09-15;2;33.74;30.07;Légère densité de sous-bois.
+S01;Z01;A1;2017-10-15;1;36.22;13.05;Structure homogène.
+S01;Z01;A1;2017-10-15;2;18.83;35.10;Structure homogène.
+S01;Z01;A2;2017-05-15;1;36.14;32.70;Structure homogène.
+S01;Z01;A2;2017-05-15;2;22.97;26.19;Légère densité de sous-bois.
+S01;Z01;A2;2017-06-15;1;46.91;41.43;Conditions typiques du secteur.
+S01;Z01;A2;2017-06-15;2;36.52;38.68;Légère densité de sous-bois.
+S01;Z01;A2;2017-07-15;1;31.84;39.70;Légère densité de sous-bois.
+S01;Z01;A2;2017-07-15;2;44.72;48.16;Légère densité de sous-bois.
+S01;Z01;A2;2017-08-15;1;36.72;11.85;Légère densité de sous-bois.
+S01;Z01;A2;2017-08-15;2;18.65;15.25;Légère densité de sous-bois.
+S01;Z01;A2;2017-09-15;1;21.15;30.69;Légère densité de sous-bois.
+S01;Z01;A2;2017-09-15;2;27.21;27.99;Légère densité de sous-bois.
+S01;Z01;A2;2017-10-15;1;16.12;45.16;Légère densité de sous-bois.
+S01;Z01;A2;2017-10-15;2;36.43;27.51;Légère densité de sous-bois.
+S01;Z01;A3;2017-05-15;1;16.87;43.32;Légère densité de sous-bois.
+S01;Z01;A3;2017-05-15;2;25.61;38.26;Conditions typiques du secteur.
+S01;Z01;A3;2017-06-15;1;12.71;17.20;Légère densité de sous-bois.
+S01;Z01;A3;2017-06-15;2;45.57;26.94;Conditions typiques du secteur.
+S01;Z01;A3;2017-07-15;1;10.10;31.01;Légère densité de sous-bois.
+S01;Z01;A3;2017-07-15;2;46.27;15.24;Structure homogène.
+S01;Z01;A3;2017-10-15;1;48.15;14.82;Structure homogène.
+S01;Z01;A3;2017-08-15;1;31.78;25.05;Légère densité de sous-bois.
+S01;Z01;A3;2017-08-15;2;18.59;39.35;Légère densité de sous-bois.
+S01;Z01;A3;2017-09-15;1;21.30;35.49;Conditions typiques du secteur.
+S01;Z01;A3;2017-09-15;2;36.10;23.85;Conditions typiques du secteur.
+S01;Z01;A3;2017-10-15;2;33.98;42.67;Légère densité de sous-bois.
+S01;Z01;A4;2017-05-15;1;10.98;27.75;Légère densité de sous-bois.
+S01;Z01;A4;2017-05-15;2;24.73;29.20;Conditions typiques du secteur.
+S01;Z01;A4;2017-06-15;1;18.05;48.75;Conditions typiques du secteur.
+S01;Z01;A4;2017-06-15;2;19.02;31.50;Conditions typiques du secteur.
+S01;Z01;A4;2017-07-15;1;45.25;45.35;Légère densité de sous-bois.
+S01;Z01;A4;2017-07-15;2;15.81;38.39;Légère densité de sous-bois.
+S01;Z01;A4;2017-08-15;1;18.89;35.17;Légère densité de sous-bois.
+S01;Z01;A4;2017-08-15;2;48.75;18.52;Légère densité de sous-bois.
+S01;Z01;A4;2017-09-15;1;35.00;48.40;Conditions typiques du secteur.
+S01;Z01;A4;2017-09-15;2;14.97;40.30;Structure homogène.
+S01;Z01;A4;2017-10-15;1;13.72;14.20;Légère densité de sous-bois.
+S01;Z01;A4;2017-10-15;2;36.82;23.79;Légère densité de sous-bois.
+S01;Z02;B1;2017-05-15;1;27.71;27.07;Structure homogène.
+S01;Z02;B1;2017-05-15;2;48.98;17.44;Légère densité de sous-bois.
+S01;Z02;B1;2017-06-15;1;38.91;15.73;Légère densité de sous-bois.
+S01;Z02;B1;2017-06-15;2;34.93;26.99;Structure homogène.
+S01;Z02;B1;2017-07-15;1;11.07;36.10;Structure homogène.
+S01;Z02;B1;2017-07-15;2;22.02;41.42;Légère densité de sous-bois.
+S01;Z02;B1;2017-08-15;1;40.83;35.16;Légère densité de sous-bois.
+S01;Z02;B1;2017-08-15;2;22.97;26.84;Conditions typiques du secteur.
+S01;Z02;B1;2017-09-15;1;21.57;48.53;Conditions typiques du secteur.
+S01;Z02;B1;2017-09-15;2;24.85;33.25;Conditions typiques du secteur.
+S01;Z02;B1;2017-10-15;1;43.01;43.60;Structure homogène.
+S01;Z02;B1;2017-10-15;2;39.20;43.88;Structure homogène.
+S01;Z02;B2;2017-05-15;1;35.75;15.76;Légère densité de sous-bois.
+S01;Z02;B2;2017-05-15;2;12.75;41.83;Conditions typiques du secteur.
+S01;Z02;B2;2017-06-15;1;38.28;25.89;Légère densité de sous-bois.
+S01;Z02;B2;2017-06-15;2;46.30;44.94;Légère densité de sous-bois.
+S01;Z02;B2;2017-07-15;1;17.34;29.31;Conditions typiques du secteur.
+S01;Z02;B2;2017-07-15;2;44.79;31.94;Structure homogène.
+S01;Z02;B2;2017-08-15;1;41.83;20.49;Structure homogène.
+S01;Z02;B2;2017-08-15;2;31.33;27.08;Légère densité de sous-bois.
+S01;Z02;B2;2017-09-15;1;10.96;24.57;Conditions typiques du secteur.
+S01;Z02;B2;2017-09-15;2;42.20;44.24;Structure homogène.
+S01;Z02;B2;2017-10-15;1;28.50;46.80;Structure homogène.
+S01;Z02;B2;2017-10-15;2;31.98;23.65;Structure homogène.
+S01;Z02;B3;2017-05-15;1;27.01;38.38;Conditions typiques du secteur.
+S01;Z02;B3;2017-05-15;2;38.10;47.16;Légère densité de sous-bois.
+S01;Z02;B3;2017-06-15;1;38.01;39.95;Conditions typiques du secteur.
+S01;Z02;B3;2017-06-15;2;40.48;38.76;Conditions typiques du secteur.
+S01;Z02;B3;2017-07-15;1;48.12;39.49;Légère densité de sous-bois.
+S01;Z02;B3;2017-07-15;2;37.72;44.71;Légère densité de sous-bois.
+S01;Z02;B3;2017-08-15;1;43.83;15.67;Conditions typiques du secteur.
+S01;Z02;B3;2017-08-15;2;26.65;40.65;Structure homogène.
+S01;Z02;B3;2017-09-15;1;35.07;33.86;Structure homogène.
+S01;Z02;B3;2017-09-15;2;26.70;46.83;Conditions typiques du secteur.
+S01;Z02;B3;2017-10-15;1;28.70;16.13;Légère densité de sous-bois.
+S01;Z02;B3;2017-10-15;2;42.85;38.51;Légère densité de sous-bois.
+S01;Z02;B4;2017-05-15;1;22.79;22.04;Légère densité de sous-bois.
+S01;Z02;B4;2017-05-15;2;24.71;14.92;Structure homogène.
+S01;Z02;B4;2017-06-15;1;14.08;15.80;Conditions typiques du secteur.
+S01;Z02;B4;2017-06-15;2;28.91;25.01;Légère densité de sous-bois.
+S01;Z02;B4;2017-07-15;1;27.86;44.05;Légère densité de sous-bois.
+S01;Z02;B4;2017-07-15;2;22.07;37.36;Structure homogène.
+S01;Z02;B4;2017-08-15;1;48.46;25.85;Légère densité de sous-bois.
+S01;Z02;B4;2017-08-15;2;37.93;20.45;Légère densité de sous-bois.
+S01;Z02;B4;2017-09-15;1;34.21;46.73;Structure homogène.
+S01;Z02;B4;2017-09-15;2;37.52;18.00;Structure homogène.
+S01;Z02;B4;2017-10-15;1;48.23;19.43;Légère densité de sous-bois.
+S01;Z02;B4;2017-10-15;2;43.46;31.50;Légère densité de sous-bois.

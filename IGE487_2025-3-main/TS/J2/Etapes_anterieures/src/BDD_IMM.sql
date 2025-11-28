@@ -6,25 +6,7 @@ DROP SCHEMA IF EXISTS "IMM_BDD" CASCADE;
 CREATE SCHEMA "IMM_BDD";
 
 -- ============================================================================
--- 1) Rôle IMM dédié
--- ============================================================================
-
-DO $$
-DECLARE
-    i int;
-BEGIN
-    FOR i IN 61..70 LOOP
-        IF i <> 65 THEN
-            EXECUTE format('GRANT USAGE ON SCHEMA IMM_BDD TO ige487_%s;', i);
-            EXECUTE format('GRANT SELECT ON ALL TABLES IN SCHEMA IMM_BDD TO ige487_%s;', i);
-        END IF;
-    END LOOP;
-END;
-$$;
-
-
--- ============================================================================
--- 2) VUES ANALYTIQUES (read-only)
+-- 1) VUES ANALYTIQUES (read-only)
 -- ============================================================================
 
 SET SCHEMA 'IMM_BDD';
