@@ -329,3 +329,4 @@ SELECT * FROM carnetPlant LIMIT 5;
 SELECT * FROM carnetPlacette LIMIT 5;
 SELECT * FROM carnetObservation LIMIT 5;
 
+select * from "Herbivorie_lecture".arbre_eva();

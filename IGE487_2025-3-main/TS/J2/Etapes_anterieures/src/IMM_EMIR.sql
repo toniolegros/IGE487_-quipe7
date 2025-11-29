@@ -1,4 +1,3 @@
-
 SET SCHEMA 'Herbivorie';
 
 ---------------------------------------------------------------------------
@@ -15,14 +14,16 @@ CREATE SCHEMA IF NOT EXISTS "Herbivorie_ecriture";
 
 CREATE OR REPLACE FUNCTION "Herbivorie_lecture".Site_EVA()
 RETURNS TABLE (
-    id Site_id,
-    site Description,
-    description Description
+    id "Herbivorie".Site_id,
+    site "Herbivorie".Description,
+    description "Herbivorie".Description
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, site, description
-    FROM Site;
-END;
+    FROM "Herbivorie".Site;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Site_INS(
     _id Site_id,
@@ -53,6 +54,7 @@ BEGIN ATOMIC
     DELETE FROM Site WHERE id = _id;
 END;
 
+
 ---------------------------------------------------------------------------
 --  ZONE
 ---------------------------------------------------------------------------
@@ -63,10 +65,12 @@ RETURNS TABLE (
     zone Zone_id,
     description Description
 )
-BEGIN ATOMIC
-    SELECT id, zone, description
-    FROM Zone;
-END;
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT id AS s_id, zone, description
+    FROM "Herbivorie".Zone;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Zone_INS(
     _id Site_id,
@@ -98,10 +102,11 @@ BEGIN ATOMIC
     WHERE id = _id AND zone = _zone;
 END;
 
+
 ---------------------------------------------------------------------------
 --  PLACETTE
+--  Table: Placette(id, zone, plac)
 ---------------------------------------------------------------------------
--- Table: Placette(id, zone, plac)
 
 CREATE OR REPLACE FUNCTION "Herbivorie_lecture".Placette_EVA()
 RETURNS TABLE (
@@ -109,10 +114,12 @@ RETURNS TABLE (
     zone Zone_id,
     plac Placette_id
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, zone, plac
-    FROM Placette;
-END;
+    FROM "Herbivorie".Placette;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Placette_INS(
     _id Site_id,
@@ -145,6 +152,7 @@ BEGIN ATOMIC
     WHERE id = _id AND zone = _zone AND plac = _plac;
 END;
 
+
 ---------------------------------------------------------------------------
 --  PARCELLE
 ---------------------------------------------------------------------------
@@ -156,10 +164,12 @@ RETURNS TABLE (
     plac Placette_id,
     parcelle Parcelle_id
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, zone, plac, parcelle
-    FROM Parcelle;
-END;
+    FROM "Herbivorie".Parcelle;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Parcelle_INS(
     _id Site_id,
@@ -194,6 +204,7 @@ BEGIN ATOMIC
     WHERE id = _id AND zone = _zone AND plac = _plac;
 END;
 
+
 ---------------------------------------------------------------------------
 --  PEUPLEMENT
 ---------------------------------------------------------------------------
@@ -203,10 +214,12 @@ RETURNS TABLE(
     peup Peuplement_id,
     description Description
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT peup, description
-    FROM Peuplement;
-END;
+    FROM "Herbivorie".Peuplement;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Peuplement_INS(
     _peup Peuplement_id,
@@ -235,6 +248,7 @@ BEGIN ATOMIC
     WHERE peup = _peup;
 END;
 
+
 ---------------------------------------------------------------------------
 --  ARBRE
 ---------------------------------------------------------------------------
@@ -244,10 +258,12 @@ RETURNS TABLE(
     arbre Arbre_id,
     description Description
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT arbre, description
-    FROM Arbre;
-END;
+    FROM "Herbivorie".Arbre;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Arbre_INS(
     _arbre Arbre_id,
@@ -276,6 +292,7 @@ BEGIN ATOMIC
     WHERE arbre = _arbre;
 END;
 
+
 ---------------------------------------------------------------------------
 --  PLANT
 ---------------------------------------------------------------------------
@@ -289,10 +306,12 @@ RETURNS TABLE(
     date Date_eco,
     note Description
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT s_id, zone, id, plac, date, note
-    FROM Plant;
-END;
+    FROM "Herbivorie".Plant;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Plant_INS(
     _s_id Site_id,
@@ -330,6 +349,7 @@ BEGIN ATOMIC
     DELETE FROM Plant WHERE id = _id;
 END;
 
+
 ---------------------------------------------------------------------------
 --  PLACETTE_CORE
 ---------------------------------------------------------------------------
@@ -342,10 +362,12 @@ RETURNS TABLE (
     peup Peuplement_id,
     date Date_eco
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, zone, plac, peup, date
-    FROM Placette_core;
-END;
+    FROM "Herbivorie".Placette_core;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Placette_core_INS(
     _id Site_id,
@@ -383,6 +405,7 @@ BEGIN ATOMIC
     WHERE id = _id AND zone = _zone AND plac = _plac;
 END;
 
+
 ---------------------------------------------------------------------------
 --  PLACETTE_DOMINANT
 ---------------------------------------------------------------------------
@@ -395,10 +418,12 @@ RETURNS TABLE (
     rang INTEGER,
     arbre Arbre_id
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, zone, plac, rang, arbre
-    FROM Placette_Dominant;
-END;
+    FROM "Herbivorie".Placette_Dominant;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Placette_Dominant_INS(
     _id Site_id,
@@ -436,6 +461,7 @@ BEGIN ATOMIC
     WHERE id = _id AND zone = _zone AND plac = _plac AND rang = _rang;
 END;
 
+
 ---------------------------------------------------------------------------
 --  PLACETTE_OBSTRUCTION
 ---------------------------------------------------------------------------
@@ -450,10 +476,12 @@ RETURNS TABLE (
     tcat TTaux,
     tval Taux_val
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, zone, plac, nature, hauteur, tcat, tval
-    FROM Placette_Obstruction;
-END;
+    FROM "Herbivorie".Placette_Obstruction;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Placette_Obstruction_INS(
     _id Site_id,
@@ -497,6 +525,7 @@ BEGIN ATOMIC
     WHERE id = _id AND zone = _zone AND plac = _plac;
 END;
 
+
 ---------------------------------------------------------------------------
 --  PLACETTE_COUVERT
 ---------------------------------------------------------------------------
@@ -510,10 +539,12 @@ RETURNS TABLE (
     tcat TTaux,
     tval Taux_val
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, zone, plac, ctype, tcat, tval
-    FROM Placette_Couvert;
-END;
+    FROM "Herbivorie".Placette_Couvert;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".Placette_Couvert_INS(
     _id Site_id,
@@ -552,6 +583,7 @@ BEGIN ATOMIC
     WHERE id = _id AND zone = _zone AND plac = _plac;
 END;
 
+
 ---------------------------------------------------------------------------
 --  OBS_DIMENSION
 ---------------------------------------------------------------------------
@@ -565,10 +597,12 @@ RETURNS TABLE(
     unite_id Unite_id,
     note Description
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, longueur, largeur, date, unite_id, note
-    FROM ObsDimension;
-END;
+    FROM "Herbivorie".ObsDimension;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".ObsDimension_INS(
     _id Plant_id,
@@ -583,6 +617,7 @@ BEGIN ATOMIC
     VALUES (_id, _long, _larg, _date, _unite, _note);
 END;
 
+
 ---------------------------------------------------------------------------
 --  OBS_FLORAISON
 ---------------------------------------------------------------------------
@@ -594,10 +629,12 @@ RETURNS TABLE(
     date Date_eco,
     note Description
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, fleur, date, note
-    FROM ObsFloraison;
-END;
+    FROM "Herbivorie".ObsFloraison;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".ObsFloraison_INS(
     _id Plant_id,
@@ -610,6 +647,7 @@ BEGIN ATOMIC
     VALUES (_id, _fleur, _date, _note);
 END;
 
+
 ---------------------------------------------------------------------------
 --  OBS_ETAT
 ---------------------------------------------------------------------------
@@ -621,10 +659,12 @@ RETURNS TABLE(
     date Date_eco,
     note Description
 )
-BEGIN ATOMIC
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
     SELECT id, etat, date, note
-    FROM ObsEtat;
-END;
+    FROM "Herbivorie".ObsEtat;
+$$;
 
 CREATE OR REPLACE PROCEDURE "Herbivorie_ecriture".ObsEtat_INS(
     _id Plant_id,
@@ -636,3 +676,146 @@ BEGIN ATOMIC
     INSERT INTO ObsEtat(id, etat, date, note)
     VALUES (_id, _etat, _date, _note);
 END;
+
+
+CREATE OR REPLACE FUNCTION "Herbivorie_lecture".Stat_Dimension_Resume()
+RETURNS TABLE (
+    longueur_moyenne NUMERIC,
+    longueur_mediane NUMERIC,
+    longueur_min NUMERIC,
+    longueur_max NUMERIC,
+    largeur_moyenne NUMERIC,
+    largeur_mediane NUMERIC,
+    largeur_min NUMERIC,
+    largeur_max NUMERIC
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT
+        AVG(longueur) AS longueur_moyenne,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY longueur) AS longueur_mediane,
+        MIN(longueur),
+        MAX(longueur),
+        AVG(largeur) AS largeur_moyenne,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY largeur),
+        MIN(largeur),
+        MAX(largeur)
+    FROM "Herbivorie".ObsDimension;
+$$;
+
+
+CREATE OR REPLACE FUNCTION "Herbivorie_lecture".Stat_Floraison_Taux()
+RETURNS TABLE (
+    site Site_id,
+    zone Zone_id,
+    taux_floraison NUMERIC
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT
+        p.s_id AS site,
+        p.zone,
+        AVG(CASE WHEN f.fleur THEN 1 ELSE 0 END)::NUMERIC AS taux_floraison
+    FROM "Herbivorie".Plant p
+    LEFT JOIN "Herbivorie".ObsFloraison f ON f.id = p.id
+    GROUP BY p.s_id, p.zone
+    ORDER BY p.s_id, p.zone;
+$$;
+
+
+CREATE OR REPLACE FUNCTION "Herbivorie_lecture".Stat_Age_Placette()
+RETURNS TABLE (
+    id Site_id,
+    zone Zone_id,
+    plac Placette_id,
+    age_jours INTEGER
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT
+        id,
+        zone,
+        plac,
+        (CURRENT_DATE - date)::INTEGER AS age_jours
+    FROM "Herbivorie".Placette_core;
+$$;
+
+CREATE OR REPLACE FUNCTION "Herbivorie_lecture".Stat_Peuplement_Repartition()
+RETURNS TABLE (
+    peuplement Peuplement_id,
+    nb_placettes INTEGER
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT
+        peup,
+        COUNT(*)
+    FROM "Herbivorie".Placette_core
+    GROUP BY peup
+    ORDER BY peup;
+$$;
+
+CREATE OR REPLACE FUNCTION "Herbivorie_lecture".Stat_Diversite_Arbres()
+RETURNS TABLE (
+    id Site_id,
+    zone Zone_id,
+    plac Placette_id,
+    indice_shannon NUMERIC
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT
+        id,
+        zone,
+        plac,
+        -SUM( freq * LOG(freq) ) AS indice_shannon
+    FROM (
+        SELECT
+            id,
+            zone,
+            plac,
+            arbre,
+            COUNT(*)::DECIMAL / SUM(COUNT(*)) OVER (PARTITION BY id, zone, plac) AS freq
+        FROM "Herbivorie".Placette_Dominant
+        GROUP BY id, zone, plac, arbre
+    ) t
+    GROUP BY id, zone, plac;
+$$;
+
+CREATE OR REPLACE FUNCTION "Herbivorie_lecture".Stat_Survie_Plantes(_jours INTEGER)
+RETURNS TABLE (
+    id Plant_id,
+    vivante BOOLEAN
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT
+        id,
+        (CURRENT_DATE - date) < _jours AS vivante
+    FROM "Herbivorie".Plant;
+$$;
+
+CREATE OR REPLACE FUNCTION "Herbivorie_lecture".Stat_Croissance()
+RETURNS TABLE(
+    id Plant_id,
+    croissance_longueur NUMERIC,
+    croissance_largeur NUMERIC
+)
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+    SELECT
+        id,
+        MAX(longueur) - MIN(longueur) AS croissance_longueur,
+        MAX(largeur) - MIN(largeur) AS croissance_largeur
+    FROM "Herbivorie".ObsDimension
+    GROUP BY id;
+$$;
+
+

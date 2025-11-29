@@ -20,7 +20,7 @@ INSERT INTO Site(id, site, description)
 SELECT
     site_conv(site_id),
     site_conv(site_id),              -- nom simplifié
-    description_conv('Carnet site')  -- description minimale
+    description_conv('Carnet site du Mont d Iberville')  -- description minimale
 FROM src
 WHERE site_verif(site_id)
 ON CONFLICT DO NOTHING;
